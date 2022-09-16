@@ -1,13 +1,13 @@
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/eigen.h>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-#include <numeric>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <numeric>
 
 #ifndef FMT_HEADER_ONLY
 #define FMT_HEADER_ONLY
@@ -43,7 +43,6 @@ void append_to_dumpfile(std::string fName, const json& taskGroup)
 }
 #endif
 
-
 class PythonConsoleIO : public IO
 {
 public:
@@ -53,8 +52,6 @@ public:
   virtual void error(const char* s) const { std::cerr << s; }
   virtual void flush() const { ; }
 };
-
-
 
 std::atomic<bool> isInterrupted;
 
@@ -72,7 +69,8 @@ void replace_nan(std::vector<double>& v)
   }
 }
 
-Eigen::MatrixXd to_eigen(const double* v, int r, int c, std::vector<bool> filter = {}, bool rowMajor = false) {
+Eigen::MatrixXd to_eigen(const double* v, int r, int c, std::vector<bool> filter = {}, bool rowMajor = false)
+{
   Eigen::MatrixXd mat(r, c);
 
   int obsNum = 0;
@@ -105,28 +103,19 @@ Eigen::MatrixXd to_eigen(const double* v, int r, int c, std::vector<bool> filter
   return mat;
 }
 
-
-py::dict run_command(
-    std::vector<double> t,
-    std::vector<double> x,
-    std::optional<std::vector<double>> y = std::nullopt,
-    std::optional<std::vector<double>> copredict_x = std::nullopt,
-    std::optional<std::vector<int>> panel = std::nullopt,
-    std::vector<int> es = {2},
-    int tau = 1,
-    std::vector<double> thetas = {1.0},
-    std::optional<std::vector<int>> libs = std::nullopt,
-    int k = 0, std::string algorithm = "simplex",
-    int numReps = 1, int p = 1, int crossfold = 0, bool full = false, bool shuffle = false,
-    bool saveFinalPredictions = false, bool saveFinalCoPredictions = false,
-    bool saveManifolds = false, bool saveSMAPCoeffs = false, bool dt = false, bool reldt = false,
-    double dtWeight = 0.0,
-    std::optional<std::vector<std::vector<double>>> extras = std::nullopt,
-    bool allowMissing = false,
-    double missingDistance = 0.0, double panelWeight = 0.0,
-    std::optional<Eigen::MatrixXd> panelWeights = std::nullopt,
-    int verbosity = 1, 
-    bool showProgressBar = true, int numThreads = 1, bool lowMemory = false, bool predictWithPast = false, std::string saveInputs = "")
+py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional<std::vector<double>> y = std::nullopt,
+                     std::optional<std::vector<double>> copredict_x = std::nullopt,
+                     std::optional<std::vector<int>> panel = std::nullopt, std::vector<int> es = { 2 }, int tau = 1,
+                     std::vector<double> thetas = { 1.0 }, std::optional<std::vector<int>> libs = std::nullopt,
+                     int k = 0, std::string algorithm = "simplex", int numReps = 1, int p = 1, int crossfold = 0,
+                     bool full = false, bool shuffle = false, bool saveFinalPredictions = false,
+                     bool saveFinalCoPredictions = false, bool saveManifolds = false, bool saveSMAPCoeffs = false,
+                     bool dt = false, bool reldt = false, double dtWeight = 0.0,
+                     std::optional<std::vector<std::vector<double>>> extras = std::nullopt, bool allowMissing = false,
+                     double missingDistance = 0.0, double panelWeight = 0.0,
+                     std::optional<Eigen::MatrixXd> panelWeights = std::nullopt, int verbosity = 1,
+                     bool showProgressBar = true, int numThreads = 1, bool lowMemory = false,
+                     bool predictWithPast = false, std::string saveInputs = "")
 {
   try {
 
@@ -150,7 +139,7 @@ py::dict run_command(
 
     std::vector<int> libraries;
     if (libs.has_value()) {
-     libraries = libs.value();
+      libraries = libs.value();
     }
 
     if (algorithm == "simplex") {
@@ -171,12 +160,12 @@ py::dict run_command(
     if (io.verbosity > 1) {
       io.print(fmt::format("Num threads used is {}\n", opts.nthreads));
       io.print(
-      fmt::format("CPU has {} logical cores and {} physical cores\n", num_logical_cores(), num_physical_cores()));
+        fmt::format("CPU has {} logical cores and {} physical cores\n", num_logical_cores(), num_physical_cores()));
     }
 
     replace_nan(t);
     replace_nan(x);
-    
+
     // Need to wipe out this so that the default missing distance
     // calculation is fine.
     for (int i = 0; i < t.size(); i++) {
@@ -196,7 +185,7 @@ py::dict run_command(
     }
 
     opts.idw = panelWeight;
-    
+
     std::map<std::pair<int, int>, float> fakePanelWeights;
 
     std::vector<int> panelIDs;
@@ -204,18 +193,18 @@ py::dict run_command(
     if (panel.has_value()) {
       panelIDs = panel.value();
       opts.panelMode = true;
-      
+
       if (panelWeights.has_value()) {
         Eigen::MatrixXd matrix = panelWeights.value();
-        
+
         std::vector<int> uniquePanelIDs(panelIDs);
         auto it = std::unique(uniquePanelIDs.begin(), uniquePanelIDs.end());
-        uniquePanelIDs.resize(std::distance(uniquePanelIDs.begin(),it));
-        
+        uniquePanelIDs.resize(std::distance(uniquePanelIDs.begin(), it));
+
         for (int i = 0; i < uniquePanelIDs.size(); i++) {
           for (int j = 0; j < uniquePanelIDs.size(); j++) {
-            std::pair<int,int> key(uniquePanelIDs[i], uniquePanelIDs[j]);
-            opts.idWeights[key] = matrix(i,j);
+            std::pair<int, int> key(uniquePanelIDs[i], uniquePanelIDs[j]);
+            opts.idWeights[key] = matrix(i, j);
           }
         }
 
@@ -260,8 +249,8 @@ py::dict run_command(
     int numUsable = std::accumulate(usable.begin(), usable.end(), 0);
     if (numUsable == 0) {
       io.print("Num usable is 0!\n");
-      
-      py::dict res("rc"_a=8000);
+
+      py::dict res("rc"_a = 8000);
       return res;
     }
 
@@ -310,7 +299,7 @@ py::dict run_command(
 
     if (io.verbosity > 1) {
       io.print("Starting the command!\n");
-      io.flush();  
+      io.flush();
     }
 
     auto genPtr = std::shared_ptr<ManifoldGenerator>(&generator, [](ManifoldGenerator*) {});
@@ -326,23 +315,23 @@ py::dict run_command(
 
     int rc = 0;
 
-//    RcppThread::ProgressBar bar(futures.size(), 1);
+    //    RcppThread::ProgressBar bar(futures.size(), 1);
 
     int kMin, kMax;
 
-   Eigen::MatrixXd predictions, coPredictions, coeffs;
-   py::dict stats, copredStats;
-   std::vector<Eigen::MatrixXd> Ms, Mps;
+    Eigen::MatrixXd predictions, coPredictions, coeffs;
+    py::dict stats, copredStats;
+    std::vector<Eigen::MatrixXd> Ms, Mps;
 
     {
-     std::vector<int> Es, libraries;
-     std::vector<double> thetas, rhos, maes;
+      std::vector<int> Es, libraries;
+      std::vector<double> thetas, rhos, maes;
 
-     std::vector<int> co_Es, co_libraries;
-     std::vector<double> co_thetas, co_rhos, co_maes;
+      std::vector<int> co_Es, co_libraries;
+      std::vector<double> co_thetas, co_rhos, co_maes;
 
-     auto pyInt = [](double v) { return (v != MISSING_D) ? v : -1; };
-     auto pyDouble = [](double v) { return (v != MISSING_D) ? v : NAN; };
+      auto pyInt = [](double v) { return (v != MISSING_D) ? v : -1; };
+      auto pyDouble = [](double v) { return (v != MISSING_D) ? v : NAN; };
 
       for (int f = 0; f < futures.size(); f++) {
         // TODO: Probably should check for interruptions every second
@@ -414,12 +403,11 @@ py::dict run_command(
         }
       }
 
-      stats = py::dict("E"_a=Es, "library"_a=libraries, "theta"_a=thetas,
-                     "rho"_a=rhos, "mae"_a=maes);
+      stats = py::dict("E"_a = Es, "library"_a = libraries, "theta"_a = thetas, "rho"_a = rhos, "mae"_a = maes);
 
       if (copredictMode) {
-        copredStats = py::dict("E"_a=co_Es, "library"_a=co_libraries, "theta"_a=co_thetas,
-                     "rho"_a=co_rhos, "mae"_a=co_maes);
+        copredStats = py::dict("E"_a = co_Es, "library"_a = co_libraries, "theta"_a = co_thetas, "rho"_a = co_rhos,
+                               "mae"_a = co_maes);
       }
     }
 
@@ -472,63 +460,30 @@ py::dict run_command(
   return res;
 }
 
-PYBIND11_MODULE(fastEDM, m) {
-    m.doc() = R"pbdoc(
+PYBIND11_MODULE(fastEDM, m)
+{
+  m.doc() = R"pbdoc(
         Pybind11 example plugin
         -----------------------
         .. currentmodule:: python_example
         .. autosummary::
            :toctree: _generate
-           add
-           subtract
+           run_command
     )pbdoc";
 
-    m.def("add", [](int i, int j) { return i + j; }, R"pbdoc(
-        Add two numbers
-        Some other explanation about the add function.
-    )pbdoc");
-
-    m.def("subtract", [](int i, int j) { return i - j; }, R"pbdoc(
-        Subtract two numbers
-        Some other explanation about the subtract function.
-    )pbdoc");
-
-    /*
-    std::vector<double> t,
-    std::vector<double> x,
-    std::optional<std::vector<double>> y = std::nullopt,
-    std::optional<std::vector<double>> copredict_x = std::nullopt,
-    std::optional<std::vector<int>> panel = std::nullopt,
-    std::vector<int> es = {2},
-    int tau = 1,
-    std::vector<double> thetas = {1.0},
-    std::optional<std::vector<int>> libs = std::nullopt,
-    int k = 0, std::string algorithm = "simplex",
-    int numReps = 1, int p = 1, int crossfold = 0, bool full = false, bool shuffle = false,
-    bool saveFinalPredictions = false, bool saveFinalCoPredictions = false,
-    bool saveManifolds = false, bool saveSMAPCoeffs = false, bool dt = false, bool reldt = false,
-    double dtWeight = 0.0,
-    std::optional<std::vector<std::vector<double>> extras = std::nullopt,
-    bool allowMissing = false,
-    double missingDistance = 0.0, double panelWeight = 0.0,
-    std::optional<Eigen::MatrixXd> panelWeights = std::nullopt,
-    int verbosity = 1, 
-    bool showProgressBar = true, int numThreads = 1, bool lowMemory = false, bool predictWithPast = false, std::string saveInputs = "")
-    */
-    m.def("run_command", run_command, py::arg("t"), py::arg("x"),
-        "y"_a=std::nullopt, "copredict_x"_a=std::nullopt, "panel"_a=std::nullopt,
-        "es"_a=std::vector<int>({2}), "tau"_a=1, "thetas"_a=std::vector<double>({1.0}),
-        "libs"_a=std::nullopt, "k"_a=0, "algorithm"_a="simplex", "numReps"_a=1, "p"_a=1, "crossfold"_a=0,
-        "full"_a=false, "shuffle"_a=false, "saveFinalPredictions"_a=false,
-        "saveFinalCoPredictions"_a=false, "saveManifolds"_a=false, "saveSMAPCoeffs"_a=false,
-        "dt"_a=false, "reldt"_a=false, "dtWeight"_a=0.0, "extras"_a=std::nullopt, "allowMissing"_a=false,
-        "missingDistance"_a=0.0, "panelWeight"_a=0.0, "panelWeights"_a=std::nullopt, "verbosity"_a=1,
-        "showProgressBar"_a=true, "numThreads"_a=1, "lowMemory"_a=false, "predictWithPast"_a=false,
-        "saveInputs"_a="",
-     R"pbdoc(
+  m.def("run_command", run_command, py::arg("t"), py::arg("x"), "y"_a = std::nullopt, "copredict_x"_a = std::nullopt,
+        "panel"_a = std::nullopt, "es"_a = std::vector<int>({ 2 }), "tau"_a = 1,
+        "thetas"_a = std::vector<double>({ 1.0 }), "libs"_a = std::nullopt, "k"_a = 0, "algorithm"_a = "simplex",
+        "numReps"_a = 1, "p"_a = 1, "crossfold"_a = 0, "full"_a = false, "shuffle"_a = false,
+        "saveFinalPredictions"_a = false, "saveFinalCoPredictions"_a = false, "saveManifolds"_a = false,
+        "saveSMAPCoeffs"_a = false, "dt"_a = false, "reldt"_a = false, "dtWeight"_a = 0.0, "extras"_a = std::nullopt,
+        "allowMissing"_a = false, "missingDistance"_a = 0.0, "panelWeight"_a = 0.0, "panelWeights"_a = std::nullopt,
+        "verbosity"_a = 1, "showProgressBar"_a = true, "numThreads"_a = 1, "lowMemory"_a = false,
+        "predictWithPast"_a = false, "saveInputs"_a = "",
+        R"pbdoc(
         Run an EDM command
         A really long description...
     )pbdoc");
 
-    m.attr("__version__") = "dev";
+  m.attr("__version__") = "dev";
 }
