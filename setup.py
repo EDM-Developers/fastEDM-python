@@ -1,7 +1,5 @@
-import sys
 from glob import glob
 
-from pybind11 import get_cmake_dir
 # Available at setup time due to pyproject.toml
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup
@@ -21,8 +19,7 @@ ext_modules = [
     Pybind11Extension("fastEDM",
         sorted(glob("src/*.cpp")),
         include_dirs=["src/vendor"],
-        # Example: passing in the version to the compiled code
-        define_macros = [('VERSION_INFO', __version__), ('JSON', 'true')],
+        define_macros=[('VERSION_INFO', __version__), ('JSON', 'true')],
         cxx_std=17
         ),
 ]
@@ -42,4 +39,5 @@ setup(
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
     python_requires=">=3.6",
+    install_requires=["numpy"],
 )
