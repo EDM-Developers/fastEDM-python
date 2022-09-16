@@ -22,7 +22,7 @@ ext_modules = [
         sorted(glob("src/*.cpp")),
         include_dirs=["src/vendor"],
         # Example: passing in the version to the compiled code
-        define_macros = [('VERSION_INFO', __version__)],
+        define_macros = [('VERSION_INFO', __version__), ('JSON', 'true')],
         cxx_std=17
         ),
 ]

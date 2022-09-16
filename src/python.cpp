@@ -5,6 +5,7 @@ using namespace pybind11::literals;
 
 #include <numeric>
 #include <iostream>
+#include <fstream>
 
 #ifndef FMT_HEADER_ONLY
 #define FMT_HEADER_ONLY
@@ -22,7 +23,7 @@ std::vector<int> bool_to_int(std::vector<bool> bv)
   return iv;
 }
 
-/*
+#ifdef JSON
 void append_to_dumpfile(std::string fName, const json& taskGroup)
 {
   json allTaskGroups;
@@ -38,7 +39,7 @@ void append_to_dumpfile(std::string fName, const json& taskGroup)
   std::ofstream o(fName);
   o << allTaskGroups << std::endl;
 }
-*/
+#endif
 
 
 class PythonConsoleIO : public IO
@@ -182,8 +183,8 @@ int run_command(
     
     //std::vector<double> t = Rcpp::as<std::vector<double>>(df["t"]);
     //std::vector<double> x = Rcpp::as<std::vector<double>>(df["x"]);
-    std::vector<double> t = {1, 2, 3, 4, 5};
-    std::vector<double> x = {1, 2, 3, 4, 5};
+    std::vector<double> t = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    std::vector<double> x = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
     replace_nan(t);
     replace_nan(x);
