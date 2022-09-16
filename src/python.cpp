@@ -111,9 +111,13 @@ Rcpp::NumericMatrix to_R_matrix(const double* v, int r, int c, std::vector<bool>
 
 //Rcpp::List run_command(
 int run_command(
-    //Rcpp::DataFrame df,
-    std::vector<int> es,
-    int tau,
+    std::vector<double> t,
+    std::vector<double> x,
+    std::optional<std::vector<double>> y = std::nullopt,
+    std::optional<std::vector<double>> copredict_x = std::nullopt,
+    std::optional<std::vector<int>> panel = std::nullopt,
+    std::vector<int> es = {2},
+    int tau = 1,
     std::vector<double> thetas = {1.0},
     std::optional<std::vector<int>> libs = std::nullopt,
     int k = 0, std::string algorithm = "simplex",
@@ -173,11 +177,6 @@ int run_command(
       io.print(
       fmt::format("CPU has {} logical cores and {} physical cores\n", num_logical_cores(), num_physical_cores()));
     }
-    
-    //std::vector<double> t = Rcpp::as<std::vector<double>>(df["t"]);
-    //std::vector<double> x = Rcpp::as<std::vector<double>>(df["x"]);
-    std::vector<double> t = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    std::vector<double> x = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
     replace_nan(t);
     replace_nan(x);
@@ -192,27 +191,25 @@ int run_command(
 
     bool explore;
     std::vector<double> xmap;
-    /*
-    if (df.containsElementNamed("y")) {
-      //xmap = Rcpp::as<std::vector<double>>(df["y"]);
-      xmap = {1, 2, 3, 4, 5};
+    if (y.has_value()) {
+      xmap = y.value();
       replace_nan(xmap);
       explore = false;
     } else {
-    */
       explore = true;
-    //}
+    }
 
     opts.idw = panelWeight;
     
     std::map<std::pair<int, int>, float> fakePanelWeights;
 
     std::vector<int> panelIDs;
-    /*
-    if (df.containsElementNamed("panel")) {
-      panelIDs = Rcpp::as<std::vector<int>>(df["panel"]);
+
+    if (panel.has_value()) {
+      panelIDs = panel.value();
       opts.panelMode = true;
       
+      /*
       if (panelWeights.isNotNull()) {
         Rcpp::NumericMatrix matrix = Rcpp::as<Rcpp::NumericMatrix>(panelWeights);
         
@@ -230,20 +227,17 @@ int run_command(
         // TODO: Perhaps throw error if both idw constant and matrix supplied.
         opts.idw = 0;
       }
-      
+      */
     } else {
-    */
       opts.panelMode = false;
-    //}
+    }
 
     std::vector<double> co_x;
 
-    /*
-    if (df.containsElementNamed("co_x")) {
-      co_x = Rcpp::as<std::vector<double>>(df["co_x"]);
+    if (copredict_x.has_value()) {
+      co_x = copredict_x.value();
       replace_nan(co_x);
     }
-    */
 
     std::vector<std::vector<double>> extrasVecs;
 
@@ -521,9 +515,13 @@ PYBIND11_MODULE(fastEDM, m) {
     )pbdoc");
 
     /*
-    //Rcpp::DataFrame df,
-    std::vector<int> es,
-    int tau,
+    std::vector<double> t,
+    std::vector<double> x,
+    std::optional<std::vector<double>> y = std::nullopt,
+    std::optional<std::vector<double>> copredict_x = std::nullopt,
+    std::optional<std::vector<int>> panel = std::nullopt,
+    std::vector<int> es = {2},
+    int tau = 1,
     std::vector<double> thetas = {1.0},
     std::optional<std::vector<int>> libs = std::nullopt,
     int k = 0, std::string algorithm = "simplex",
@@ -538,8 +536,9 @@ PYBIND11_MODULE(fastEDM, m) {
     int verbosity = 1, 
     bool showProgressBar = true, int numThreads = 1, bool lowMemory = false, bool predictWithPast = false, std::string saveInputs = "")
     */
-    m.def("run_command", run_command, py::arg("es"), py::arg("tau"),
-        "thetas"_a=std::vector<double>({1.0}),
+    m.def("run_command", run_command, py::arg("t"), py::arg("x"),
+        "y"_a=std::nullopt, "copredict_x"_a=std::nullopt, "panel"_a=std::nullopt,
+        "es"_a=std::vector<int>({2}), "tau"_a=1, "thetas"_a=std::vector<double>({1.0}),
         "libs"_a=std::nullopt, "k"_a=0, "algorithm"_a="simplex", "numReps"_a=1, "p"_a=1, "crossfold"_a=0,
         "full"_a=false, "shuffle"_a=false, "saveFinalPredictions"_a=false,
         "saveFinalCoPredictions"_a=false, "saveManifolds"_a=false, "saveSMAPCoeffs"_a=false,
