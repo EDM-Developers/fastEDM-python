@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/eigen.h>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -71,11 +72,8 @@ void replace_nan(std::vector<double>& v)
   }
 }
 
-
-/*
-Rcpp::NumericMatrix to_R_matrix(const double* v, int r, int c, std::vector<bool> filter = {}, bool rowMajor = false)
-{
-  Rcpp::NumericMatrix mat(r, c);
+Eigen::MatrixXd to_eigen(const double* v, int r, int c, std::vector<bool> filter = {}, bool rowMajor = false) {
+  Eigen::MatrixXd mat(r, c);
 
   int obsNum = 0;
 
@@ -83,10 +81,10 @@ Rcpp::NumericMatrix to_R_matrix(const double* v, int r, int c, std::vector<bool>
     for (int i = 0; i < r; i++) {
       for (int j = 0; j < c; j++) {
         if (filter.size() > 0 && !filter[i]) {
-          mat(i, j) = NA_REAL;
+          mat(i, j) = NAN;
           continue;
         }
-        mat(i, j) = v[obsNum] != MISSING_D ? v[obsNum] : NA_REAL;
+        mat(i, j) = v[obsNum] != MISSING_D ? v[obsNum] : NAN;
         obsNum += 1;
       }
     }
@@ -94,11 +92,11 @@ Rcpp::NumericMatrix to_R_matrix(const double* v, int r, int c, std::vector<bool>
     for (int j = 0; j < c; j++) {
       for (int i = 0; i < r; i++) {
         if (filter.size() > 0 && !filter[i]) {
-          mat(i, j) = NA_REAL;
+          mat(i, j) = NAN;
           continue;
         }
 
-        mat(i, j) = v[obsNum] != MISSING_D ? v[obsNum] : NA_REAL;
+        mat(i, j) = v[obsNum] != MISSING_D ? v[obsNum] : NAN;
         obsNum += 1;
       }
     }
@@ -106,7 +104,6 @@ Rcpp::NumericMatrix to_R_matrix(const double* v, int r, int c, std::vector<bool>
 
   return mat;
 }
-*/
 
 
 py::dict run_command(
@@ -127,7 +124,7 @@ py::dict run_command(
     std::optional<std::vector<std::vector<double>>> extras = std::nullopt,
     bool allowMissing = false,
     double missingDistance = 0.0, double panelWeight = 0.0,
-    //Rcpp::Nullable<Rcpp::NumericMatrix> panelWeights = R_NilValue, 
+    std::optional<Eigen::MatrixXd> panelWeights = std::nullopt,
     int verbosity = 1, 
     bool showProgressBar = true, int numThreads = 1, bool lowMemory = false, bool predictWithPast = false, std::string saveInputs = "")
 {
@@ -208,9 +205,8 @@ py::dict run_command(
       panelIDs = panel.value();
       opts.panelMode = true;
       
-      /*
-      if (panelWeights.isNotNull()) {
-        Rcpp::NumericMatrix matrix = Rcpp::as<Rcpp::NumericMatrix>(panelWeights);
+      if (panelWeights.has_value()) {
+        Eigen::MatrixXd matrix = panelWeights.value();
         
         std::vector<int> uniquePanelIDs(panelIDs);
         auto it = std::unique(uniquePanelIDs.begin(), uniquePanelIDs.end());
@@ -219,14 +215,13 @@ py::dict run_command(
         for (int i = 0; i < uniquePanelIDs.size(); i++) {
           for (int j = 0; j < uniquePanelIDs.size(); j++) {
             std::pair<int,int> key(uniquePanelIDs[i], uniquePanelIDs[j]);
-            opts.idWeights[key] = Rcpp::as<Rcpp::NumericMatrix>(panelWeights)(i,j);
+            opts.idWeights[key] = matrix(i,j);
           }
         }
 
         // TODO: Perhaps throw error if both idw constant and matrix supplied.
         opts.idw = 0;
       }
-      */
     } else {
       opts.panelMode = false;
     }
@@ -335,19 +330,19 @@ py::dict run_command(
 
     int kMin, kMax;
 
- //   Rcpp::NumericMatrix predictions, coPredictions, coeffs;
- //   Rcpp::DataFrame stats, copredStats;
- //   std::vector<Rcpp::NumericMatrix> Ms, Mps;
+   Eigen::MatrixXd predictions, coPredictions, coeffs;
+   py::dict stats, copredStats;
+   std::vector<Eigen::MatrixXd> Ms, Mps;
 
     {
-  //    Rcpp::IntegerVector Es, libraries;
-  //    Rcpp::NumericVector thetas, rhos, maes;
+     std::vector<int> Es, libraries;
+     std::vector<double> thetas, rhos, maes;
 
-  //    Rcpp::IntegerVector co_Es, co_libraries;
-  //    Rcpp::NumericVector co_thetas, co_rhos, co_maes;
+     std::vector<int> co_Es, co_libraries;
+     std::vector<double> co_thetas, co_rhos, co_maes;
 
-  //    auto Rint = [](double v) { return (v != MISSING_D) ? v : NA_INTEGER; };
-  //    auto Rdouble = [](double v) { return (v != MISSING_D) ? v : NA_REAL; };
+     auto pyInt = [](double v) { return (v != MISSING_D) ? v : -1; };
+     auto pyDouble = [](double v) { return (v != MISSING_D) ? v : NAN; };
 
       for (int f = 0; f < futures.size(); f++) {
         // TODO: Probably should check for interruptions every second
@@ -378,67 +373,60 @@ py::dict run_command(
           kMax = pred.kMax;
         }
 
-        /*
         if (!pred.copredict) {
           for (int t = 0; t < pred.stats.size(); t++) {
-            Es.push_back(Rint(pred.stats[t].E));
-            thetas.push_back(Rdouble(pred.stats[t].theta));
-            libraries.push_back(Rint(pred.stats[t].library));
-            rhos.push_back(Rdouble(pred.stats[t].rho));
-            maes.push_back(Rdouble(pred.stats[t].mae));
+            Es.push_back(pyInt(pred.stats[t].E));
+            thetas.push_back(pyDouble(pred.stats[t].theta));
+            libraries.push_back(pyInt(pred.stats[t].library));
+            rhos.push_back(pyDouble(pred.stats[t].rho));
+            maes.push_back(pyDouble(pred.stats[t].mae));
           }
         } else {
           for (int t = 0; t < pred.stats.size(); t++) {
-            co_Es.push_back(Rint(pred.stats[t].E));
-            co_thetas.push_back(Rdouble(pred.stats[t].theta));
-            co_libraries.push_back(Rint(pred.stats[t].library));
-            co_rhos.push_back(Rdouble(pred.stats[t].rho));
-            co_maes.push_back(Rdouble(pred.stats[t].mae));
+            co_Es.push_back(pyInt(pred.stats[t].E));
+            co_thetas.push_back(pyDouble(pred.stats[t].theta));
+            co_libraries.push_back(pyInt(pred.stats[t].library));
+            co_rhos.push_back(pyDouble(pred.stats[t].rho));
+            co_maes.push_back(pyDouble(pred.stats[t].mae));
           }
         }
-        */
 
         if (pred.rc > rc) {
           rc = pred.rc;
         }
 
-/*
         if (pred.predictions != nullptr) {
           if (!pred.copredict) {
             predictions =
-              to_R_matrix(pred.predictions.get(), pred.predictionRows.size(), pred.numThetas, pred.predictionRows);
+              to_eigen(pred.predictions.get(), pred.predictionRows.size(), pred.numThetas, pred.predictionRows);
           } else {
             coPredictions =
-              to_R_matrix(pred.predictions.get(), pred.predictionRows.size(), pred.numThetas, pred.predictionRows);
+              to_eigen(pred.predictions.get(), pred.predictionRows.size(), pred.numThetas, pred.predictionRows);
           }
         }
         if (pred.coeffs != nullptr) {
-          coeffs = to_R_matrix(pred.coeffs.get(), pred.predictionRows.size(), pred.numCoeffCols, pred.predictionRows);
+          coeffs = to_eigen(pred.coeffs.get(), pred.predictionRows.size(), pred.numCoeffCols, pred.predictionRows);
         }
 
         if (saveManifolds) {
-          Ms.push_back(to_R_matrix(pred.M->data(), pred.M->numPoints(), pred.M->E_actual(), {}, true));
-          Mps.push_back(to_R_matrix(pred.Mp->data(), pred.Mp->numPoints(), pred.Mp->E_actual(), {}, true));
+          Ms.push_back(to_eigen(pred.M->data(), pred.M->numPoints(), pred.M->E_actual(), {}, true));
+          Mps.push_back(to_eigen(pred.Mp->data(), pred.Mp->numPoints(), pred.Mp->E_actual(), {}, true));
         }
       }
 
-      stats = Rcpp::DataFrame::create(Rcpp::_["E"] = Es, Rcpp::_["library"] = libraries, Rcpp::_["theta"] = thetas,
-                                        Rcpp::_["rho"] = rhos, Rcpp::_["mae"] = maes);
+      stats = py::dict("E"_a=Es, "library"_a=libraries, "theta"_a=thetas,
+                     "rho"_a=rhos, "mae"_a=maes);
 
       if (copredictMode) {
-        copredStats =
-          Rcpp::DataFrame::create(Rcpp::_["E"] = co_Es, Rcpp::_["library"] = co_libraries, Rcpp::_["theta"] = co_thetas,
-                                  Rcpp::_["rho"] = co_rhos, Rcpp::_["mae"] = co_maes);
+        copredStats = py::dict("E"_a=co_Es, "library"_a=co_libraries, "theta"_a=co_thetas,
+                     "rho"_a=co_rhos, "mae"_a=co_maes);
       }
-*/
-    }
     }
 
     py::dict res;
 
     res["rc"] = rc;
 
-    /*
     res["stats"] = stats;
     res["kMin"] = kMin;
     res["kMax"] = kMax;
@@ -471,13 +459,12 @@ py::dict run_command(
     if (dt || reldt) {
       res["dtWeight"] = generator.dtWeight();
     }
-    */
 
     return res;
   } catch (const std::exception& e) {
-    //Rcpp::Rcerr << e.what() << std::endl;
+    std::cerr << e.what() << std::endl;
   } catch (...) {
-    //Rcpp::Rcerr << "Unknown error in the C++ code of edm" << std::endl;
+    std::cerr << "Unknown error in the C++ code of edm" << std::endl;
   }
 
   py::dict res;
@@ -524,7 +511,7 @@ PYBIND11_MODULE(fastEDM, m) {
     std::optional<std::vector<std::vector<double>> extras = std::nullopt,
     bool allowMissing = false,
     double missingDistance = 0.0, double panelWeight = 0.0,
-    //Rcpp::Nullable<Rcpp::NumericMatrix> panelWeights = R_NilValue, 
+    std::optional<Eigen::MatrixXd> panelWeights = std::nullopt,
     int verbosity = 1, 
     bool showProgressBar = true, int numThreads = 1, bool lowMemory = false, bool predictWithPast = false, std::string saveInputs = "")
     */
@@ -535,8 +522,8 @@ PYBIND11_MODULE(fastEDM, m) {
         "full"_a=false, "shuffle"_a=false, "saveFinalPredictions"_a=false,
         "saveFinalCoPredictions"_a=false, "saveManifolds"_a=false, "saveSMAPCoeffs"_a=false,
         "dt"_a=false, "reldt"_a=false, "dtWeight"_a=0.0, "extras"_a=std::nullopt, "allowMissing"_a=false,
-        "missingDistance"_a=0.0, "panelWeight"_a=0.0, "verbosity"_a=1, "showProgressBar"_a=true,
-        "numThreads"_a=1, "lowMemory"_a=false, "predictWithPast"_a=false,
+        "missingDistance"_a=0.0, "panelWeight"_a=0.0, "panelWeights"_a=std::nullopt, "verbosity"_a=1,
+        "showProgressBar"_a=true, "numThreads"_a=1, "lowMemory"_a=false, "predictWithPast"_a=false,
         "saveInputs"_a="",
      R"pbdoc(
         Run an EDM command
