@@ -109,8 +109,7 @@ Rcpp::NumericMatrix to_R_matrix(const double* v, int r, int c, std::vector<bool>
 */
 
 
-//Rcpp::List run_command(
-int run_command(
+py::dict run_command(
     std::vector<double> t,
     std::vector<double> x,
     std::optional<std::vector<double>> y = std::nullopt,
@@ -267,12 +266,8 @@ int run_command(
     if (numUsable == 0) {
       io.print("Num usable is 0!\n");
       
-        /*
-      Rcpp::List res;
-      res["rc"] = 8000;
+      py::dict res("rc"_a=8000);
       return res;
-        */
-        return 8000;
     }
 
     if (!explore && libraries.size() == 0) {
@@ -439,9 +434,11 @@ int run_command(
     }
     }
 
-/*
-    Rcpp::List res;
+    py::dict res;
+
     res["rc"] = rc;
+
+    /*
     res["stats"] = stats;
     res["kMin"] = kMin;
     res["kMax"] = kMax;
@@ -474,23 +471,18 @@ int run_command(
     if (dt || reldt) {
       res["dtWeight"] = generator.dtWeight();
     }
-*/
+    */
 
-    //return res;
-    return rc;
-
+    return res;
   } catch (const std::exception& e) {
     //Rcpp::Rcerr << e.what() << std::endl;
   } catch (...) {
     //Rcpp::Rcerr << "Unknown error in the C++ code of edm" << std::endl;
   }
 
-/*
-  Rcpp::List res;
+  py::dict res;
   res["rc"] = 8000;
   return res;
-*/
-    return 8000;
 }
 
 PYBIND11_MODULE(fastEDM, m) {
