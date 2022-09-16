@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -111,16 +112,16 @@ Rcpp::NumericMatrix to_R_matrix(const double* v, int r, int c, std::vector<bool>
 //Rcpp::List run_command(
 int run_command(
     //Rcpp::DataFrame df,
-    //Rcpp::IntegerVector es, 
+    std::vector<int> es,
     int tau,
-    //Rcpp::NumericVector thetas,
-    //Rcpp::Nullable<Rcpp::IntegerVector> libs,
+    std::vector<double> thetas = {1.0},
+    std::optional<std::vector<int>> libs = std::nullopt,
     int k = 0, std::string algorithm = "simplex",
     int numReps = 1, int p = 1, int crossfold = 0, bool full = false, bool shuffle = false,
     bool saveFinalPredictions = false, bool saveFinalCoPredictions = false,
     bool saveManifolds = false, bool saveSMAPCoeffs = false, bool dt = false, bool reldt = false,
     double dtWeight = 0.0,
-    //Rcpp::Nullable<Rcpp::List> extras = R_NilValue,
+    std::optional<std::vector<std::vector<double>>> extras = std::nullopt,
     bool allowMissing = false,
     double missingDistance = 0.0, double panelWeight = 0.0,
     //Rcpp::Nullable<Rcpp::NumericMatrix> panelWeights = R_NilValue, 
@@ -143,22 +144,14 @@ int run_command(
     opts.lowMemoryMode = lowMemory;
     opts.useOnlyPastToPredictFuture = predictWithPast;
 
-    /*
-    if (thetas.size() > 0) {
-      opts.thetas = Rcpp::as<std::vector<double>>(thetas);
-    } else {
-    */
-      opts.thetas = { 1.0 };
-    //}
+    opts.thetas = thetas;
 
-    //std::vector<int> Es = Rcpp::as<std::vector<int>>(es);
-    std::vector<int> Es = {2, 3, 4};
+    std::vector<int> Es = es;
 
-    //std::vector<int> libraries;
-    //if (libs.isNotNull()) {
-    //  libraries = Rcpp::as<std::vector<int>>(libs);
-    //}
-    std::vector<int> libraries = {2};
+    std::vector<int> libraries;
+    if (libs.has_value()) {
+     libraries = libs.value();
+    }
 
     if (algorithm == "simplex") {
       opts.algorithm = Algorithm::Simplex;
@@ -254,17 +247,15 @@ int run_command(
 
     std::vector<std::vector<double>> extrasVecs;
 
-    /*
-    if (extras.isNotNull()) {
-      Rcpp::List extrasList = Rcpp::as<Rcpp::List>(extras);
+    if (extras.has_value()) {
+      auto extrasList = extras.value();
 
       for (int e = 0; e < extrasList.size(); e++) {
-        extrasVecs.emplace_back(Rcpp::as<std::vector<double>>(extrasList[e]));
+        extrasVecs.emplace_back(extrasList[e]);
         replace_nan(extrasVecs[extrasVecs.size() - 1]);
         opts.metrics.push_back(Metric::Diff); // TODO: Handle factor extras
       }
     }
-    */
 
     int numExtrasLagged = 0;
 
@@ -529,29 +520,30 @@ PYBIND11_MODULE(fastEDM, m) {
         Some other explanation about the subtract function.
     )pbdoc");
 
-/*
+    /*
     //Rcpp::DataFrame df,
-    //Rcpp::IntegerVector es, 
+    std::vector<int> es,
     int tau,
-    //Rcpp::NumericVector thetas,
-    //Rcpp::Nullable<Rcpp::IntegerVector> libs,
+    std::vector<double> thetas = {1.0},
+    std::optional<std::vector<int>> libs = std::nullopt,
     int k = 0, std::string algorithm = "simplex",
     int numReps = 1, int p = 1, int crossfold = 0, bool full = false, bool shuffle = false,
     bool saveFinalPredictions = false, bool saveFinalCoPredictions = false,
     bool saveManifolds = false, bool saveSMAPCoeffs = false, bool dt = false, bool reldt = false,
     double dtWeight = 0.0,
-    //Rcpp::Nullable<Rcpp::List> extras = R_NilValue,
+    std::optional<std::vector<std::vector<double>> extras = std::nullopt,
     bool allowMissing = false,
     double missingDistance = 0.0, double panelWeight = 0.0,
     //Rcpp::Nullable<Rcpp::NumericMatrix> panelWeights = R_NilValue, 
     int verbosity = 1, 
     bool showProgressBar = true, int numThreads = 1, bool lowMemory = false, bool predictWithPast = false, std::string saveInputs = "")
-*/
-    m.def("run_command", run_command, py::arg("tau"),
-        "k"_a=0, "algorithm"_a="simplex", "numReps"_a=1, "p"_a=1, "crossfold"_a=0,
+    */
+    m.def("run_command", run_command, py::arg("es"), py::arg("tau"),
+        "thetas"_a=std::vector<double>({1.0}),
+        "libs"_a=std::nullopt, "k"_a=0, "algorithm"_a="simplex", "numReps"_a=1, "p"_a=1, "crossfold"_a=0,
         "full"_a=false, "shuffle"_a=false, "saveFinalPredictions"_a=false,
         "saveFinalCoPredictions"_a=false, "saveManifolds"_a=false, "saveSMAPCoeffs"_a=false,
-        "dt"_a=false, "reldt"_a=false, "dtWeight"_a=0.0, "allowMissing"_a=false,
+        "dt"_a=false, "reldt"_a=false, "dtWeight"_a=0.0, "extras"_a=std::nullopt, "allowMissing"_a=false,
         "missingDistance"_a=0.0, "panelWeight"_a=0.0, "verbosity"_a=1, "showProgressBar"_a=true,
         "numThreads"_a=1, "lowMemory"_a=false, "predictWithPast"_a=false,
         "saveInputs"_a="",
