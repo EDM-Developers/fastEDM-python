@@ -1,6 +1,7 @@
 import fastEDM as m
 from pathlib import Path
 
+
 def test_pybind11():
     assert m.__version__ == 'dev'
 
