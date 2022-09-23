@@ -16,7 +16,7 @@ __version__ = "0.0.1"
 #   reproducible builds (https://github.com/pybind/python_example/pull/53)
 
 ext_modules = [
-    Pybind11Extension("fastEDM",
+    Pybind11Extension("_fastEDM",
         sorted(glob("src/*.cpp")),
         include_dirs=["src/vendor"],
         define_macros=[('VERSION_INFO', __version__), ('JSON', 'true')],
@@ -26,6 +26,7 @@ ext_modules = [
 
 setup(
     name="fastEDM",
+    packages=["fastEDM"],
     version=__version__,
     author="Patrick Laub",
     author_email="patrick.laub@gmail.com",

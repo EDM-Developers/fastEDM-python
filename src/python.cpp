@@ -460,7 +460,7 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
   return res;
 }
 
-PYBIND11_MODULE(fastEDM, m)
+PYBIND11_MODULE(_fastEDM, m)
 {
   m.doc() = R"pbdoc(
         Pybind11 example plugin
