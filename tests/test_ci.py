@@ -60,8 +60,6 @@ def check_edm_result(res, rho, co_rho=None):
   assert res["rc"] == 0
   expect_approx_equal(res["stats"]["rho"], rho)
 
-  return ######################3
-
   if co_rho is not None:
     expect_approx_equal(res["copredStats"]["rho"], co_rho)
 
@@ -72,15 +70,13 @@ def check_edm_results(res1, res2, rho1, rho2):
 def check_noisy_edm_result(res, rho_1, rho_2, co_rho_1=None, co_rho_2=None):
   assert res["rc"] == 0
 
-  return ####################
-
-  df = res["stats"] #.dropna()
+  df = res["stats"].dropna()
   meanRho = df.groupby(["E", "library", "theta"])[["rho"]].mean()
 
   assert all((rho_1 <= meanRho) & (meanRho <= rho_2))
   
   if co_rho_1 is not None:
-    df = res["copredStats"] #.dropna()
+    df = res["copredStats"].dropna()
     meanCoRho = df.groupby(["E", "library", "theta"])[["rho"]].mean()
     assert all((co_rho_1 <= meanCoRho) & (meanCoRho <= co_rho_2))
 
@@ -90,16 +86,16 @@ def check_noisy_edm_result(res, rho_1, rho_2, co_rho_1=None, co_rho_2=None):
 def test_no_seed_predict_past():
   "No seed and predictWithPast=True"
   obs = 10
-  t = np.arange(1, obs)
-  x = np.arange(1, obs)
+  t = np.arange(1, obs+1)
+  x = np.arange(1, obs+1)
   edm(t, x, shuffle=True)
   
   # Make sure the plugin doesn't crash if 'predictWithPast' is set
   old = edm(t, x, full=True, predictWithPast=False, savePredictions=True)
   new = edm(t, x, full=True, predictWithPast=True, savePredictions=True)
   
-  # check_edm_result(old, .9722) ##########################
-  # check_edm_result(new, .99866) #########################
+  check_edm_result(old, .9722)
+  check_edm_result(new, .99866)
 
 def test_simple_manifold():
   "Simple manifolds"
@@ -115,7 +111,7 @@ def test_simple_manifold():
   u1 = np.array([-1.027216, 1.527376, .5907618, 1.070512, 2.139774, -.5876155, .1418234, 1.390853, -1.030574, .5835255, 1.538284, 1.095415, 1.289363, .4250214, 1.332112, .1224301, .4007208, 1.163034, -.9338163, -1.553558, 1.128875, .71824, .8828724, -.9635994, .5716761, .0727569, -.3750865, -.8911737, -.8376914, -.3425734, -1.895796, 1.220617, .8647164, -.4872026, .1291741, -1.807868, .9658784, -.8437532, .7287974, -.0579607, -.7721093, .3223931, .4673252, -.3628134, -.8418728, -.8550454, -1.341583, -.4182656, .4155265, -.3210205, .7979518, .0385472, -2.345896, -.0535184, -1.997315, -.897661, -1.172937, -1.374793, -.439018, 1.212688, -.8391462, -.2125729, .3922674, -1.24292, -.3563064, -1.368325, 1.293824, -1.078043, -.6217906, .2247944, -.3572458, 1.455859, .177133, -.4954876, -.4623527, -.9394832, -1.381252, .3134706, .1598284, .4492666, .7745574, 2.02939, .2769991, -1.729418, -.0719662, -.4887659, -.6402079, -.3815501, -.6201261, -.6295606, .2707956, 1.056473, -1.657482, 1.228817, .8577658, .4940666, 1.37631, -.0235891, 1.044822, .2835678, .019814, -1.331117, -.4936376, -1.570097, 1.482886, -.2730185, -.467406, .8039773, .6066654, .099022, 1.246193, -.6019896, -1.078758, .0527143, .522496, .7971591, 2.091462, -1.87791, 1.123751, .1762845, 1.552169, -.4524258, .4963196, -1.343762, 1.630493, -.1519897, .4249264, .1730838, -1.662154, .5415513, 1.762257, .4248972, -1.56878, -.0073573, .4523424, -1.077807, -3.545176, -1.198717, 1.314406, -1.067673, -.7234299, 1.150322, 2.114344, .4767627, 1.228333, 1.247601, -.2687568, 1.233031, 1.063017, -1.619441, .5857949, 1.296269, .8043274, .3258621, 3.569143, .3741727, -1.49533, -.0184031, .2356096, -1.738142, -.3104737, -.377933, -.5639113, -1.457661, .9921553, -.9124324, -.0439041, -.6419182, .5668358, -.4034521, -.3590932, -1.489591, -.5190973, .5887823, .8400694, .0363247, 1.122107, -.0369949, 1.10605, .6818572, -.1490808, -.9733297, -.8749319, .6384861, -1.647552, -2.270525, .6330903, .1588243, -.0146699, -.2460195, .7494598, -.0442753, -1.198142, -.1973266, .7962075, -.0928933, 2.165736, -.7527414, 1.006963, .1770673, -.4803994])
 
   # explore x, e(2/10)
-  res = edm(t, x, E=range(2,10+1), saveInputs="pyfail2.json")
+  res = edm(t, x, E=range(2,10+1))
   rho = np.array([.99893, .99879, .99835, .99763, .99457, .99385, .991, .98972, .98572])
   check_edm_result(res, rho)
 
@@ -135,8 +131,8 @@ def test_simple_manifold():
   
   # edm explore x, theta(0.2(0.1)2.0) algorithm(smap)
   res = edm(t, x, theta=np.arange(0.2, 2.0+0.1, 0.1), algorithm="smap")
-  expect_approx_equal(res["stats"]["rho"][0], .99874)
-  expect_approx_equal(res["stats"]["rho"][-1], .99882)
+  expect_approx_equal(res["stats"]["rho"].iloc[0], .99874)
+  expect_approx_equal(res["stats"]["rho"].iloc[-1], .99882)
   
   # edm xmap x y, theta(0.2) algorithm(smap) savesmap(beta)
   res1 = edm(t, x, y, theta=0.2, algorithm="smap", saveSMAPCoeffs=True)
@@ -185,7 +181,11 @@ def test_simple_manifold():
   assert np.sum(np.isnan(testx[2:])) == 0
   
   # edm xmap y x, p(10) copredict(testx2) copredictvar(z.x2) direction(oneway)
-  z_x2 = (x2 - np.nanmean(x2)) / np.nanstd(x2)
+  # In Python, we would do:
+  #   z_x2 = (x2 - np.nanmean(x2)) / np.nanstd(x2)
+  # However, the np.nanmean/np.nanstd have more precision than the R equivalent.
+  # So to match R's results, here are the lower-precision versions of those quantities.
+  z_x2 = (x2 - 0.6404819) / 0.216451
   res = edm(t, y, x, p=10,  copredict=z_x2, saveCoPredictions=True)
   testx2 = res["copredictions"]
   check_edm_result(res, .89554, co_rho=.93837)
