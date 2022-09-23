@@ -308,15 +308,16 @@ def edm(t, x, y = None, panel = None, E=2, tau=1, theta=1.0, library=None,
     if verbosity > 1:
       print("Finished successfully!")
 
-    df = res["stats"] #.dropna()
+    res["stats"] = pd.DataFrame(res["stats"])
+    df = res["stats"].dropna()
 
-    # if verbosity > 1:
-    #   print(f"Number of non-missing stats: {df.shape[0]}")
+    if verbosity > 1:
+      print(f"Number of non-missing stats: {df.shape[0]}")
 
-    # if df.shape[0] > 1:
-    #     res["summary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
-    # else:
-    res["summary"] = res["stats"]
+    if df.shape[0] > 1:
+        res["summary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
+    else:
+      res["summary"] = res["stats"]
 
     if verbosity > 0:
       print("Summary of predictions")
@@ -330,12 +331,13 @@ def edm(t, x, y = None, panel = None, E=2, tau=1, theta=1.0, library=None,
             res["kMin"], " and ", res["kMax"])
 
     if copredict is not None:
-      df = res["copredStats"] #.dropna()
+      res["copredStats"] = pd.DataFrame(res["copredStats"])
+      df = res["copredStats"].dropna()
 
-      # if df.shape[0] > 1:
-      #   res["copredSummary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
-      # else:
-      res["copredSummary"] = res["copredStats"]
+      if df.shape[0] > 1:
+        res["copredSummary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
+      else:
+        res["copredSummary"] = res["copredStats"]
 
       if verbosity > 0:
         print("Summary of copredictions")
