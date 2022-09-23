@@ -1,4 +1,5 @@
 from _fastEDM import run_command
+import numpy as np
 import pandas as pd
 
 #' edm
@@ -238,12 +239,16 @@ def edm(t, x, y = None, panel = None, E=2, tau=1, theta=1.0, library=None,
   if len(t) != len(x):
     raise ValueError("The time and x variables should be the same len")
 
+  t = np.asarray(t)
+  x = np.asarray(x)
+
   if type(t[0]) == int:
-      t = t.astype(float)
+    t = t.astype(float)
 
   if y is not None and len(y) > 0:
     if len(t) != len(y):
       raise ValueError("The y variable is the wrong len")
+    y = np.asarray(y)
 
   if panel is not None and len(panel) > 0:
     if len(t) != len(panel):
@@ -252,11 +257,13 @@ def edm(t, x, y = None, panel = None, E=2, tau=1, theta=1.0, library=None,
   if copredict is not None and len(copredict) > 0:
     if len(t) != len(copredict):
       raise ValueError("Coprediction vector is the wrong len")
+    copredict = np.asarray(copredict)
 
   if extras is not None:
     for extra in extras:
       if len(extra) != len(x):
         raise ValueError("An extra variable is not the right size")
+    extras = [np.asarray(extra) for extra in extras]
 
   if numReps > 1:
     shuffle = True
