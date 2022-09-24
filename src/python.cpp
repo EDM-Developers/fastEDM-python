@@ -315,7 +315,12 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
 
     int rc = 0;
 
-    //    RcppThread::ProgressBar bar(futures.size(), 1);
+    py::object tqdm = py::none();
+    py::object bar = py::none();
+    if (showProgressBar) {
+      tqdm = py::module_::import("tqdm.auto");
+      bar = tqdm.attr("tqdm")("total"_a = futures.size());
+    }
 
     int kMin, kMax;
 
@@ -336,24 +341,23 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
       for (int f = 0; f < futures.size(); f++) {
         // TODO: Probably should check for interruptions every second
         // or so instead of after each future is completed.
-
-        /*
-        isInterrupted = RcppThread::isInterrupted();
+        isInterrupted = (PyErr_CheckSignals() != 0);
 
         if (isInterrupted) {
-          Rcpp::List res;
+          // throw py::error_already_set();
+          if (showProgressBar) {
+            bar.attr("close")();
+          }
+          py::dict res;
           res["rc"] = 1;
           return res;
         }
-        */
 
         const PredictionResult pred = futures[f].get();
 
-        /*
         if (showProgressBar) {
-          bar++;
+          bar.attr("update")(1);
         }
-        */
 
         if (f == 0 || pred.kMin < kMin) {
           kMin = pred.kMin;
@@ -409,6 +413,10 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
         copredStats = py::dict("E"_a = co_Es, "library"_a = co_libraries, "theta"_a = co_thetas, "rho"_a = co_rhos,
                                "mae"_a = co_maes);
       }
+    }
+
+    if (showProgressBar) {
+      bar.attr("close")();
     }
 
     py::dict res;
