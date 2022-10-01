@@ -43,13 +43,13 @@ void append_to_dumpfile(std::string fName, const json& taskGroup)
 }
 #endif
 
-class PythonConsoleIO : public IO
+class PythonIO : public IO
 {
 public:
-  PythonConsoleIO() { this->verbosity = 1; }
-  PythonConsoleIO(int v) { this->verbosity = v; }
-  virtual void out(const char* s) const { std::cout << s; }
-  virtual void error(const char* s) const { std::cerr << s; }
+  PythonIO() { this->verbosity = 1; }
+  PythonIO(int v) { this->verbosity = v; }
+  virtual void out(const char* s) const { py::print(s); }
+  virtual void error(const char* s) const { py::print(s); }
   virtual void flush() const { ; }
 };
 
@@ -119,7 +119,7 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
 {
   try {
 
-    PythonConsoleIO io(verbosity);
+    PythonIO io(verbosity);
     isInterrupted = false;
 
     Options opts;
