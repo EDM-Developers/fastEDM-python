@@ -1,0 +1,28 @@
+# Adapted from: https://blog.pyodide.org/posts/0.21-release/#building-binary-wheels-for-pyodide
+
+name: Build wheels for web assembly
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.10.2
+    - uses: mymindstorm/setup-emsdk@v11
+      with:
+        version: 3.1.14
+    - run: pip install pyodide-build==0.21.0
+    - run: CXXFLAGS=-DPYODIDE=true pyodide build
+    - name: Archive WASM wheels
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels
+        path: ${{github.workspace}}/dist/*.whl

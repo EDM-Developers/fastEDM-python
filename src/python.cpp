@@ -153,6 +153,11 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
 {
   try {
 
+#ifdef PYODIDE
+    showProgressBar = false;
+    numThreads = 1;
+#endif
+
     PythonIO io(verbosity);
     isInterrupted = false;
 
@@ -340,22 +345,33 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
 
     auto genPtr = std::shared_ptr<ManifoldGenerator>(&generator, [](ManifoldGenerator*) {});
 
+#ifndef PYODIDE
     std::vector<std::future<PredictionResult>> futures = launch_tasks(
       genPtr, opts, Es, libraries, k, numReps, crossfold, explore, full, shuffle, saveFinalPredictions,
       saveFinalCoPredictions, saveSMAPCoeffs, copredictMode, usable, rngState, &io, rcpp_keep_going, nullptr);
 
+    int numTasks = futures.size();
+
     if (io.verbosity > 1) {
-      io.print(fmt::format("Waiting for {} results to come back\n", futures.size()));
+      io.print(fmt::format("Waiting for {} results to come back\n", numTasks));
       io.flush();
     }
+#else
+    std::vector<PredictionResult> results = run_tasks(
+      genPtr, opts, Es, libraries, k, numReps, crossfold, explore, full, shuffle, saveFinalPredictions,
+      saveFinalCoPredictions, saveSMAPCoeffs, copredictMode, usable, rngState, &io, rcpp_keep_going, nullptr);
+
+    int numTasks = results.size();
+#endif
 
     int rc = 0;
 
     py::object tqdm = py::none();
     py::object bar = py::none();
+
     if (showProgressBar) {
       tqdm = py::module_::import("tqdm.auto");
-      bar = tqdm.attr("tqdm")("total"_a = futures.size());
+      bar = tqdm.attr("tqdm")("total"_a = numTasks);
     }
 
     int kMin, kMax;
@@ -374,7 +390,7 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
       auto pyInt = [](double v) { return (v != MISSING_D) ? v : -1; };
       auto pyDouble = [](double v) { return (v != MISSING_D) ? v : NAN; };
 
-      for (int f = 0; f < futures.size(); f++) {
+      for (int task = 0; task < numTasks; task++) {
         // TODO: Probably should check for interruptions every second
         // or so instead of after each future is completed.
         isInterrupted = (PyErr_CheckSignals() != 0);
@@ -389,16 +405,20 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
           return res;
         }
 
-        const PredictionResult pred = futures[f].get();
+#ifndef PYODIDE
+        const PredictionResult pred = futures[task].get();
+#else
+        const PredictionResult & pred = results[task];
+#endif
 
         if (showProgressBar) {
           bar.attr("update")(1);
         }
 
-        if (f == 0 || pred.kMin < kMin) {
+        if (task == 0 || pred.kMin < kMin) {
           kMin = pred.kMin;
         }
-        if (f == 0 || pred.kMax > kMax) {
+        if (task == 0 || pred.kMax > kMax) {
           kMax = pred.kMax;
         }
 
