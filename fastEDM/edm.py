@@ -1,4 +1,4 @@
-from _fastEDM import run_command
+from _fastEDM import *
 import numpy as np
 import pandas as pd
 

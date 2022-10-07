@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from fastEDM import edm
+from fastEDM import edm, create_manifold
 
 
 def tslag(t, x, lag=1, dt=1):
@@ -98,6 +98,19 @@ def check_noisy_edm_result(res, rho_1, rho_2, co_rho_1=None, co_rho_2=None):
             (np.asarray(co_rho_1) <= meanCoRho) & (meanCoRho <= np.asarray(co_rho_2))
         )
 
+
+def test_create_manifold():
+    # Basic manifold creation [basicManifold]
+    E = 2
+    tau = 1
+    p = 1
+    t = [1, 2, 3, 4]
+    x = [11, 12, 13, 14]
+
+    # Basic manifold, no extras or dt
+    manifold = create_manifold(t, x, E=E, tau=tau, p=p)
+    true_manifold = np.array([[12, 11], [13, 12]])
+    assert np.allclose(manifold, true_manifold)
 
 # formals(edm)$verbosity = 0
 # formals(edm)$showProgressBar = False

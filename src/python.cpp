@@ -103,6 +103,40 @@ Eigen::MatrixXd to_eigen(const double* v, int r, int c, std::vector<bool> filter
   return mat;
 }
 
+Eigen::MatrixXd create_manifold(std::vector<double> t, std::vector<double> x,
+                                std::optional<std::vector<std::vector<double>>> extras = std::nullopt,
+                                std::optional<std::vector<int>> panel = std::nullopt, int E = 2, int tau = 1,
+                                bool allowMissing = false, int p = 1, bool full = false, bool dt = false,
+                                bool reldt = false, double dtWeight = 0.0, double panelWeight = 0.0)
+{
+
+  std::vector<std::vector<double>> extrasVecs;
+
+  if (extras.has_value()) {
+    auto extrasList = extras.value();
+
+    for (int e = 0; e < extrasList.size(); e++) {
+      extrasVecs.emplace_back(extrasList[e]);
+      replace_nan(extrasVecs[extrasVecs.size() - 1]);
+    }
+  }
+  int numExtrasLagged = 0;
+
+  std::vector<int> panelIDs;
+
+  if (panel.has_value()) {
+    panelIDs = panel.value();
+  }
+
+  ManifoldGenerator generator(t, x, tau, p, {}, {}, panelIDs, extrasVecs, numExtrasLagged, dt, reldt, allowMissing,
+                              dtWeight);
+
+  std::vector<bool> usable = generator.generate_usable(E);
+
+  Manifold M(generator, E, usable, false, false, false);
+  return to_eigen(M.data(), M.numPoints(), M.E_actual(), {}, true);
+}
+
 py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional<std::vector<double>> y = std::nullopt,
                      std::optional<std::vector<double>> copredict_x = std::nullopt,
                      std::optional<std::vector<int>> panel = std::nullopt, std::vector<int> es = { 2 }, int tau = 1,
@@ -494,6 +528,13 @@ PYBIND11_MODULE(_fastEDM, m)
         Run an EDM command
         A really long description...
     )pbdoc");
+
+  m.def("create_manifold", create_manifold, py::arg("t"), py::arg("x"), "extras"_a = std::nullopt,
+        "panel"_a = std::nullopt, "E"_a = 2, "tau"_a = 1, "allowMissing"_a = false, "p"_a = 1, "full"_a = false,
+        "dt"_a = false, "reldt"_a = false, "dtWeight"_a = 0.0, "panelWeight"_a = 0.0,
+        R"pbdoc(
+        Create a time-delayed embedding manifold.
+        )pbdoc");
 
   m.attr("__version__") = "dev";
 }
