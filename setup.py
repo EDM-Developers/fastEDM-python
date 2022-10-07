@@ -19,7 +19,7 @@ ext_modules = [
     Pybind11Extension("_fastEDM",
         sorted(glob("src/*.cpp")),
         include_dirs=["src/vendor"],
-        define_macros=[('VERSION_INFO', __version__), ('JSON', 'true')],
+        define_macros=[("VERSION_INFO", __version__), ("JSON", "true")],
         cxx_std=17
         ),
 ]
