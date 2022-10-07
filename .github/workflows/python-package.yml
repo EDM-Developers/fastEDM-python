@@ -54,4 +54,9 @@ jobs:
         version: 3.1.14
     - run: pip install pyodide-build==0.21.0
     - run: pyodide build
+    - name: Archive WASM wheels
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels.zip
+        path: ${{github.workspace}}/dist/*.whl
 
