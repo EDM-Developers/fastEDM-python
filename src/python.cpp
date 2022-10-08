@@ -340,7 +340,7 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
 
     auto genPtr = std::shared_ptr<ManifoldGenerator>(&generator, [](ManifoldGenerator*) {});
 
-    std::vector<std::future<PredictionResult>> futures = launch_task_group(
+    std::vector<std::future<PredictionResult>> futures = launch_tasks(
       genPtr, opts, Es, libraries, k, numReps, crossfold, explore, full, shuffle, saveFinalPredictions,
       saveFinalCoPredictions, saveSMAPCoeffs, copredictMode, usable, rngState, &io, rcpp_keep_going, nullptr);
 
