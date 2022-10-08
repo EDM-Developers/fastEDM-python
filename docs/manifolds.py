@@ -26,6 +26,10 @@ add_event_listener(document.getElementById("E-slider"), "input", update_E)
 def redraw():
     manifold = fastEDM.create_manifold(t, x, E=E, tau=tau, p=p)
     mani_str = "<br>".join([str(manifold[i]) for i in range(manifold.shape[0])])
+
+    res = fastEDM.edm(t, x, E=E, verbosity=0)
+    mani_str += "<br>" + str(res["summary"])
+
     Element("manifold-output").write(mani_str)
 
 redraw()

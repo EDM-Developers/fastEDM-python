@@ -14,9 +14,7 @@ using namespace pybind11::literals;
 #endif
 #include <fmt/format.h>
 
-#ifndef WASM
 #include "cpu.h"
-#endif
 #include "edm.h"
 #include "stats.h"
 
