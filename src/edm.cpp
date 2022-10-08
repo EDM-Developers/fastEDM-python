@@ -11,11 +11,15 @@
 #pragma warning(disable : 4018)
 
 #include "edm.h"
+#ifndef WASM
 #include "cpu.h"
+#endif
 #include "distances.h"
 #include "library_prediction_split.h"
 #include "stats.h" // for correlation and mean_absolute_error
+#ifndef WASM
 #include "thread_pool.h"
+#endif
 
 #ifndef FMT_HEADER_ONLY
 #define FMT_HEADER_ONLY
@@ -76,6 +80,7 @@ std::atomic<int> estimatedTotalNumPredictions = 0;
 std::atomic<int> numPredictionsFinished = 0;
 std::atomic<int> numTasksFinished = 0;
 
+#ifndef WASM
 #if defined LEAK_POOL_ON_WINDOWS && defined _WIN32
 // Must leak resource, because windows + R deadlock otherwise. Memory
 // is released on shutdown.
@@ -86,13 +91,14 @@ ThreadPool workerPool(0), taskRunnerPool(0);
 ThreadPool* workerPoolPtr = &workerPool;
 ThreadPool* taskRunnerPoolPtr = &taskRunnerPool;
 #endif
-
+#endif
 std::vector<std::future<PredictionResult>> launch_task_group(
   const std::shared_ptr<ManifoldGenerator> generator, Options opts, const std::vector<int>& Es,
   const std::vector<int>& libraries, int k, int numReps, int crossfold, bool explore, bool full, bool shuffle,
   bool saveFinalPredictions, bool saveFinalCoPredictions, bool saveSMAPCoeffs, bool copredictMode,
   const std::vector<bool>& usable, const std::string& rngState, IO* io, bool keep_going(), void all_tasks_finished())
 {
+#ifndef WASM
   static bool initOnce = [&]() {
 #if defined(WITH_ARRAYFIRE)
     af::setMemStepSize(1024 * 1024 * 5);
@@ -104,6 +110,7 @@ std::vector<std::future<PredictionResult>> launch_task_group(
   }();
 
   workerPoolPtr->set_num_workers(opts.nthreads);
+#endif
 
   // Construct the instance which will (repeatedly) split the data
   // into either the library set or the prediction set.
@@ -193,7 +200,12 @@ std::vector<std::future<PredictionResult>> launch_task_group(
         opts.library = library;
 
         futures.emplace_back(
-          taskRunnerPoolPtr->enqueue([generator, opts, E, splitter, io, keep_going, all_tasks_finished] {
+#ifndef WASM
+          taskRunnerPoolPtr->enqueue(
+#else
+          std::async(std::launch::async,
+#endif
+          [generator, opts, E, splitter, io, keep_going, all_tasks_finished] {
             return edm_task(generator, opts, E, splitter.libraryRows(), splitter.predictionRows(), io, keep_going,
                             all_tasks_finished);
           }));
@@ -210,9 +222,14 @@ std::vector<std::future<PredictionResult>> launch_task_group(
           opts.saveSMAPCoeffs = false;
 
           futures.emplace_back(
-            taskRunnerPoolPtr->enqueue([generator, opts, E, splitter, cousable, io, keep_going, all_tasks_finished] {
+#ifndef WASM
+          taskRunnerPoolPtr->enqueue(
+#else
+          std::async(std::launch::async,
+#endif
+          [generator, opts, E, splitter, cousable, io, keep_going, all_tasks_finished] {
               return edm_task(generator, opts, E, splitter.libraryRows(), cousable, io, keep_going, all_tasks_finished);
-            }));
+          }));
 
           opts.taskNum += 1;
         }
@@ -307,6 +324,7 @@ PredictionResult edm_task(const std::shared_ptr<ManifoldGenerator> generator, Op
     io->progress_bar(0.0);
   }
 
+#ifndef WASM
   if (multiThreaded) {
     std::vector<std::future<void>> results(numPredictions);
 #if WITH_GPU_PROFILING
@@ -358,6 +376,8 @@ PredictionResult edm_task(const std::shared_ptr<ManifoldGenerator> generator, Op
     } else {
 #endif
 
+#endif
+
       for (int i = 0; i < numPredictions; i++) {
         if (keep_going != nullptr && !keep_going()) {
           break;
@@ -369,11 +389,13 @@ PredictionResult edm_task(const std::shared_ptr<ManifoldGenerator> generator, Op
           io->progress_bar(numPredictionsFinished / ((double)estimatedTotalNumPredictions));
         }
       }
+
+#ifndef WASM
 #if defined(WITH_ARRAYFIRE)
     }
 #endif
   }
-
+#endif
   PredictionResult pred;
 
   pred.explore = opts.explore;

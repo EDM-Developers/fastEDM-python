@@ -14,7 +14,9 @@ using namespace pybind11::literals;
 #endif
 #include <fmt/format.h>
 
+#ifndef WASM
 #include "cpu.h"
+#endif
 #include "edm.h"
 #include "stats.h"
 
@@ -191,11 +193,15 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
     opts.cmdLine = "";
     opts.saveKUsed = true;
 
+#ifndef WASM
     if (io.verbosity > 1) {
       io.print(fmt::format("Num threads used is {}\n", opts.nthreads));
       io.print(
         fmt::format("CPU has {} logical cores and {} physical cores\n", num_logical_cores(), num_physical_cores()));
     }
+#else
+    opts.nthreads = 1;
+#endif
 
     replace_nan(t);
     replace_nan(x);
