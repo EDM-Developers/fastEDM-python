@@ -92,6 +92,135 @@ ThreadPool* workerPoolPtr = &workerPool;
 ThreadPool* taskRunnerPoolPtr = &taskRunnerPool;
 #endif
 #endif
+
+std::vector<PredictionResult> task_group(
+  const std::shared_ptr<ManifoldGenerator> generator, Options opts, const std::vector<int>& Es,
+  const std::vector<int>& libraries, int k, int numReps, int crossfold, bool explore, bool full, bool shuffle,
+  bool saveFinalPredictions, bool saveFinalCoPredictions, bool saveSMAPCoeffs, bool copredictMode,
+  const std::vector<bool>& usable, const std::string& rngState, IO* io, bool keep_going(), void all_tasks_finished())
+{
+#ifndef WASM
+  workerPoolPtr->set_num_workers(opts.nthreads);
+#endif
+
+  // Construct the instance which will (repeatedly) split the data
+  // into either the library set or the prediction set.
+  LibraryPredictionSetSplitter splitter(explore, full, shuffle, crossfold, usable, rngState);
+
+  int numLibraries = (explore ? 1 : libraries.size());
+
+  // Note: the 'numIters' either refers to the 'replicate' option
+  // used for bootstrap resampling, or the 'crossfold' number of
+  // cross-validation folds. Both options can't be used together.
+  int numIters = numReps > crossfold ? numReps : crossfold;
+
+  opts.explore = explore;
+  opts.numTasks = numIters * Es.size() * numLibraries;
+  opts.configNum = 0;
+  opts.taskNum = 0;
+  opts.saveKUsed = true;
+
+  int maxE = Es[Es.size() - 1];
+
+  std::vector<bool> cousable;
+
+  if (copredictMode) {
+    opts.numTasks *= 2;
+    cousable = generator->generate_usable(maxE, true);
+  }
+
+  int E, kAdj, library, librarySize;
+
+  std::vector<PredictionResult> results;
+
+  bool newLibraryPredictionSplit = true;
+
+  for (int iter = 1; iter <= numIters; iter++) {
+    if (explore) {
+      newLibraryPredictionSplit = true;
+      librarySize = splitter.next_library_size(iter);
+    }
+
+    if (keep_going != nullptr && !keep_going()) {
+      break;
+    }
+
+    for (int i = 0; i < Es.size(); i++) {
+      E = Es[i];
+
+      // 'libraries' is implicitly set to one value in explore mode
+      // though in xmap mode it is a user-supplied list which we loop over.
+      for (int l = 0; l == 0 || l < libraries.size(); l++) {
+        if (!explore) {
+          newLibraryPredictionSplit = true;
+        }
+
+        if (explore) {
+          library = librarySize;
+        } else {
+          library = libraries[l];
+        }
+
+        // Set the number of neighbours to use
+        if (k > 0) {
+          kAdj = k;
+        } else if (k < 0) {
+          kAdj = -1; // Leave a sentinel value so we know to skip the nearest neighbours calculation
+        } else if (k == 0) {
+          bool isSMap = opts.algorithm == Algorithm::SMap;
+          int defaultK = generator->E_actual(E) + 1 + isSMap;
+          kAdj = defaultK < library ? defaultK : library;
+        }
+
+        bool lastConfig = (E == maxE) && (l + 1 == numLibraries);
+
+        if (explore) {
+          opts.savePrediction = saveFinalPredictions && ((iter == numReps) || (crossfold > 0)) && lastConfig;
+        } else {
+          opts.savePrediction = saveFinalPredictions && (iter == numReps) && lastConfig;
+        }
+        opts.saveSMAPCoeffs = saveSMAPCoeffs;
+
+        if (newLibraryPredictionSplit) {
+          splitter.update_library_prediction_split(library, iter);
+          newLibraryPredictionSplit = false;
+        }
+
+        opts.copredict = false;
+        opts.k = kAdj;
+        opts.library = library;
+
+        results.push_back(
+            edm_task(generator, opts, E, splitter.libraryRows(), splitter.predictionRows(), io, keep_going,
+                            all_tasks_finished)
+        );
+
+        opts.taskNum += 1;
+
+        if (copredictMode) {
+          opts.copredict = true;
+          if (explore) {
+            opts.savePrediction = saveFinalCoPredictions && ((iter == numReps) || (crossfold > 0)) && lastConfig;
+          } else {
+            opts.savePrediction = saveFinalCoPredictions && ((iter == numReps)) && lastConfig;
+          }
+          opts.saveSMAPCoeffs = false;
+
+          results.push_back(
+              edm_task(generator, opts, E, splitter.libraryRows(), cousable, io, keep_going, all_tasks_finished)
+          );
+
+          opts.taskNum += 1;
+        }
+
+        opts.configNum += opts.thetas.size();
+      }
+    }
+  }
+
+  return results;
+}
+
 std::vector<std::future<PredictionResult>> launch_task_group(
   const std::shared_ptr<ManifoldGenerator> generator, Options opts, const std::vector<int>& Es,
   const std::vector<int>& libraries, int k, int numReps, int crossfold, bool explore, bool full, bool shuffle,
