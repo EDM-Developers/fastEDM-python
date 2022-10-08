@@ -93,9 +93,9 @@ std::vector<PredictionResult> task_group(
   bool saveFinalPredictions, bool saveFinalCoPredictions, bool saveSMAPCoeffs, bool copredictMode,
   const std::vector<bool>& usable, const std::string& rngState, IO* io, bool keep_going(), void all_tasks_finished())
 {
-#ifndef WASM
-  workerPoolPtr->set_num_workers(opts.nthreads);
-#endif
+  if (opts.nthreads > 1) {
+    workerPoolPtr->set_num_workers(opts.nthreads);
+  }
 
   // Construct the instance which will (repeatedly) split the data
   // into either the library set or the prediction set.
@@ -231,7 +231,9 @@ std::vector<std::future<PredictionResult>> launch_task_group(
     return true;
   }();
 
-  workerPoolPtr->set_num_workers(opts.nthreads);
+  if (opts.nthreads > 1) {
+    workerPoolPtr->set_num_workers(opts.nthreads);
+  }
 
   // Construct the instance which will (repeatedly) split the data
   // into either the library set or the prediction set.

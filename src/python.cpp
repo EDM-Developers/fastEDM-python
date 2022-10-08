@@ -153,8 +153,9 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
 {
   try {
 
-#ifdef WASM
+#ifdef PYODIDE
     showProgressBar = false;
+    numThreads = 1;
 #endif
 
     PythonIO io(verbosity);
@@ -195,15 +196,11 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
     opts.cmdLine = "";
     opts.saveKUsed = true;
 
-#ifndef WASM
     if (io.verbosity > 1) {
       io.print(fmt::format("Num threads used is {}\n", opts.nthreads));
       io.print(
         fmt::format("CPU has {} logical cores and {} physical cores\n", num_logical_cores(), num_physical_cores()));
     }
-#else
-    opts.nthreads = 1;
-#endif
 
     replace_nan(t);
     replace_nan(x);
@@ -348,17 +345,17 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
 
     auto genPtr = std::shared_ptr<ManifoldGenerator>(&generator, [](ManifoldGenerator*) {});
 
-#ifndef WASM
+#ifndef PYODIDE
     std::vector<std::future<PredictionResult>> futures = launch_task_group(
       genPtr, opts, Es, libraries, k, numReps, crossfold, explore, full, shuffle, saveFinalPredictions,
       saveFinalCoPredictions, saveSMAPCoeffs, copredictMode, usable, rngState, &io, rcpp_keep_going, nullptr);
 
+    int numTasks = futures.size();
+
     if (io.verbosity > 1) {
-      io.print(fmt::format("Waiting for {} results to come back\n", futures.size()));
+      io.print(fmt::format("Waiting for {} results to come back\n", numTasks));
       io.flush();
     }
-
-    int numTasks = futures.size();
 #else
     std::vector<PredictionResult> results = task_group(
       genPtr, opts, Es, libraries, k, numReps, crossfold, explore, full, shuffle, saveFinalPredictions,
@@ -408,7 +405,7 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
           return res;
         }
 
-#ifndef WASM
+#ifndef PYODIDE
         const PredictionResult pred = futures[task].get();
 #else
         const PredictionResult & pred = results[task];
