@@ -154,7 +154,6 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
   try {
 
 #ifdef PYODIDE
-    showProgressBar = false;
     numThreads = 1;
 #endif
 
@@ -379,6 +378,9 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
     Eigen::MatrixXd predictions, coPredictions, coeffs;
     py::dict stats, copredStats;
     std::vector<Eigen::MatrixXd> Ms, Mps;
+    double distanceTime = 0;
+    double searchTime = 0;
+    double predictionTime = 0;
 
     {
       std::vector<int> Es, libraries;
@@ -410,6 +412,10 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
 #else
         const PredictionResult & pred = results[task];
 #endif
+
+        distanceTime += pred.distanceTime / 1e6;
+        searchTime += pred.searchTime / 1e6;
+        predictionTime += pred.predictionTime / 1e6;
 
         if (showProgressBar) {
           bar.attr("update")(1);
@@ -478,6 +484,10 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
     py::dict res;
 
     res["rc"] = rc;
+
+    res["distanceTime"] = distanceTime;
+    res["searchTime"] = searchTime;
+    res["predictionTime"] = predictionTime;
 
     res["stats"] = stats;
     res["kMin"] = kMin;

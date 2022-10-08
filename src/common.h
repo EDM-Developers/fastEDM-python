@@ -108,6 +108,7 @@ struct PredictionResult
   std::string cmdLine;
   bool explore, copredict;
   int configNum;
+  int distanceTime, searchTime, predictionTime;
 };
 
 class IO
@@ -205,3 +206,16 @@ void to_json(json& j, const PredictionResult& p);
 void from_json(const json& j, PredictionResult& p);
 
 #endif
+
+// Calculate time elapsed since some initial reference time.
+// Author: Nikos Athanasiou
+// https://stackoverflow.com/a/21995693
+template <
+    class result_t   = std::chrono::microseconds,
+    class clock_t    = std::chrono::steady_clock,
+    class duration_t = std::chrono::microseconds
+>
+auto since(std::chrono::time_point<clock_t, duration_t> const& start)
+{
+    return std::chrono::duration_cast<result_t>(clock_t::now() - start);
+}

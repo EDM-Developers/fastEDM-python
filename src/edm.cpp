@@ -50,7 +50,8 @@ PredictionResult edm_task(const std::shared_ptr<ManifoldGenerator> generator, Op
 
 void make_prediction(int Mp_i, const Options& opts, const Manifold& M, const Manifold& Mp,
                      Eigen::Map<MatrixXd> predictionsView, Eigen::Map<MatrixXi> rcView, Eigen::Map<MatrixXd> coeffsView,
-                     int* kUsed, bool keep_going());
+                     int* kUsed, bool keep_going(),
+                     int *distanceTime, int *searchTime, int *predictionTime);
 
 DistanceIndexPairs k_nearest_neighbours(const DistanceIndexPairs& potentialNeighbours, int k);
 
@@ -357,6 +358,10 @@ PredictionResult edm_task(const std::shared_ptr<ManifoldGenerator> generator, Op
     io->progress_bar(0.0);
   }
 
+  std::vector<int> distanceTimes(numPredictions);
+  std::vector<int> searchTimes(numPredictions);
+  std::vector<int> predictionTimes(numPredictions);
+
   if (multiThreaded) {
     std::vector<std::future<void>> results(numPredictions);
 #if WITH_GPU_PROFILING
@@ -372,7 +377,12 @@ PredictionResult edm_task(const std::shared_ptr<ManifoldGenerator> generator, Op
         }
 
         results[i] = workerPoolPtr->unsafe_enqueue(
-          [&, i] { make_prediction(i, opts, M, Mp, predictionsView, rcView, coeffsView, &(kUsed[i]), keep_going); });
+          [&, i] {
+            make_prediction(i, opts, M, Mp, predictionsView, rcView, coeffsView, &(kUsed[i]), keep_going,
+                &(distanceTimes[i]),
+                &(searchTimes[i]),
+                &(predictionTimes[i]));
+          });
       }
     }
 
@@ -412,7 +422,10 @@ PredictionResult edm_task(const std::shared_ptr<ManifoldGenerator> generator, Op
         if (keep_going != nullptr && !keep_going()) {
           break;
         }
-        make_prediction(i, opts, M, Mp, predictionsView, rcView, coeffsView, &(kUsed[i]), keep_going);
+        make_prediction(i, opts, M, Mp, predictionsView, rcView, coeffsView, &(kUsed[i]), keep_going,
+                &(distanceTimes[i]),
+                &(searchTimes[i]),
+                &(predictionTimes[i]));
 
         if (io != nullptr) {
           numPredictionsFinished += 1;
@@ -425,6 +438,10 @@ PredictionResult edm_task(const std::shared_ptr<ManifoldGenerator> generator, Op
   }
 
   PredictionResult pred;
+
+  pred.distanceTime = std::accumulate(distanceTimes.begin(), distanceTimes.end(), 0.0);
+  pred.searchTime = std::accumulate(searchTimes.begin(), searchTimes.end(), 0.0);
+  pred.predictionTime = std::accumulate(predictionTimes.begin(), predictionTimes.end(), 0.0);
 
   pred.explore = opts.explore;
 
@@ -550,7 +567,8 @@ PredictionResult edm_task(const std::shared_ptr<ManifoldGenerator> generator, Op
 // the target point.
 void make_prediction(int Mp_i, const Options& opts, const Manifold& M, const Manifold& Mp,
                      Eigen::Map<MatrixXd> predictionsView, Eigen::Map<MatrixXi> rcView, Eigen::Map<MatrixXd> coeffsView,
-                     int* kUsed, bool keep_going())
+                     int* kUsed, bool keep_going(),
+                     int *distanceTime, int *searchTime, int *predictionTime)
 {
   // An impatient user may want to cancel a long-running EDM command, so we occasionally check using this
   // callback to see whether we ought to keep going with this EDM command. Of course, this adds a tiny inefficiency,
@@ -559,6 +577,13 @@ void make_prediction(int Mp_i, const Options& opts, const Manifold& M, const Man
     rcView(0, Mp_i) = BREAK_HIT;
     return;
   }
+
+  *distanceTime = 0;
+  *searchTime = 0;
+  *predictionTime = 0;
+  auto start = std::chrono::steady_clock::now();
+
+  bool checkMissing = (opts.missingdistance == 0);
 
   DistanceIndexPairs potentialNN;
   if (opts.distance == Distance::Wasserstein) {
@@ -570,6 +595,9 @@ void make_prediction(int Mp_i, const Options& opts, const Manifold& M, const Man
       potentialNN = eager_lp_distances(Mp_i, opts, M, Mp);
     }
   }
+
+  *distanceTime = since(start).count();
+  start = std::chrono::steady_clock::now();
 
   if (keep_going != nullptr && !keep_going()) {
     rcView(0, Mp_i) = BREAK_HIT;
@@ -604,6 +632,9 @@ void make_prediction(int Mp_i, const Options& opts, const Manifold& M, const Man
     kNNs = k_nearest_neighbours(potentialNN, k);
   }
 
+  *searchTime = since(start).count();
+  start = std::chrono::steady_clock::now();
+
   *kUsed = kNNs.inds.size();
 
   if (keep_going != nullptr && !keep_going()) {
@@ -622,6 +653,8 @@ void make_prediction(int Mp_i, const Options& opts, const Manifold& M, const Man
   } else {
     rcView(0, Mp_i) = INVALID_ALGORITHM;
   }
+
+  *predictionTime= since(start).count();
 }
 
 // For a given point, find the k nearest neighbours of this point.
