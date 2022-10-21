@@ -1,4 +1,4 @@
-import scipy
+from scipy.optimize import minimize
 import numpy as np
 import math
 
@@ -56,14 +56,12 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         if time is not None and time not in data.columns:
             print(f"{time} is not a column in the supplied dataframe.")
             return 1
-
         x, y = data[cause], data[effect]
         t = data[time] if time else list(range(len(x)))
     else:
         if verbosity > 0:
             print("Using supplied time series vectors.")
-        x = np.asarray(cause)
-        y = np.asarray(effect)
+        x, y = np.asarray(cause), np.asarray(effect)
         t = time if time else list(range(len(x)))
 
     if len(t) != len(x) or len(t) != len(y):
@@ -112,7 +110,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     else:
         libraryStart = 10
     
-    step = (libraryMax - libraryStart)/25
+    step = (libraryMax - libraryStart) / 25
     libraries = [math.ceil(libraryStart + step * k) for k in range(25)]
 
     # Next run the convergent cross-mapping (CCM), using the effect to predict the cause.
@@ -140,7 +138,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         return alpha * np.exp(-gamma * library) + rhoInfinity
 
     try:
-        mFit = scipy.optimize.minimize(mTarget, initial_guess = monsterFitStart, args = mArgs)
+        mFit = minimize(mTarget, initial_guess = monsterFitStart, args = mArgs)
         monsterFit = { 
             "alpha": mFit["alpha"], 
             "gamma": mFit["gamma"], 
