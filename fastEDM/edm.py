@@ -109,7 +109,7 @@ import pandas as pd
 #'
 #' @param saveManifolds This option allows you to save the library and prediction manifolds.
 #'
-#' @param saveSMAPCoeffs  This option allows S-map coefficients to be stored.
+#' @param saveSMAPCoeffs    This option allows S-map coefficients to be stored.
 # in variables with
 # a specified prefix. For example, specifying "edm xmap x y, algorithm(smap) savesmap(beta) k(-1)" will
 # create a set of new variables such as beta1_b0_rep1. The string prefix (e.g., \sQuote{beta}) must not be
@@ -222,9 +222,9 @@ import pandas as pd
 #' @export
 #'
 #' @examples
-#'  t = c(1, 2, 3, 4, 5, 6, 7, 8)
-#'  x = c(11, 12, 13, 14, 15, 16, 17, 18)
-#'  res = edm(t, x)
+#'    t = c(1, 2, 3, 4, 5, 6, 7, 8)
+#'    x = c(11, 12, 13, 14, 15, 16, 17, 18)
+#'    res = edm(t, x)
 #
 def edm(t, x, y = None, panel = None, E=2, tau=1, theta=1.0, library=None,
         k=0, algorithm="simplex", p=None, crossfold=0, full=False,
@@ -236,120 +236,120 @@ def edm(t, x, y = None, panel = None, E=2, tau=1, theta=1.0, library=None,
         showProgressBar=None, numThreads=1, lowMemory=False,
         predictWithPast=False, saveInputs=""):
 
-  if len(t) != len(x):
-    raise ValueError("The time and x variables should be the same len")
+    if len(t) != len(x):
+        raise ValueError("The time and x variables should be the same len")
 
-  t = np.asarray(t)
-  x = np.asarray(x)
+    t = np.asarray(t)
+    x = np.asarray(x)
 
-  if type(t[0]) == int:
-    t = t.astype(float)
+    if type(t[0]) == int:
+        t = t.astype(float)
 
-  if y is not None and len(y) > 0:
-    if len(t) != len(y):
-      raise ValueError("The y variable is the wrong len")
-    y = np.asarray(y)
+    if y is not None and len(y) > 0:
+        if len(t) != len(y):
+            raise ValueError("The y variable is the wrong len")
+        y = np.asarray(y)
 
-  if panel is not None and len(panel) > 0:
-    if len(t) != len(panel):
-      raise ValueError("The panel id variable is the wrong len")
+    if panel is not None and len(panel) > 0:
+        if len(t) != len(panel):
+            raise ValueError("The panel id variable is the wrong len")
 
-  if copredict is not None and len(copredict) > 0:
-    if len(t) != len(copredict):
-      raise ValueError("Coprediction vector is the wrong len")
-    copredict = np.asarray(copredict)
+    if copredict is not None and len(copredict) > 0:
+        if len(t) != len(copredict):
+            raise ValueError("Coprediction vector is the wrong len")
+        copredict = np.asarray(copredict)
 
-  if extras is not None:
-    for extra in extras:
-      if len(extra) != len(x):
-        raise ValueError("An extra variable is not the right size")
-    extras = [np.asarray(extra) for extra in extras]
+    if extras is not None:
+        for extra in extras:
+            if len(extra) != len(x):
+                raise ValueError("An extra variable is not the right size")
+        extras = [np.asarray(extra) for extra in extras]
 
-  if numReps > 1:
-    shuffle = True
+    if numReps > 1:
+        shuffle = True
 
-  if showProgressBar is None:
-    showProgressBar = (verbosity > 0)
+    if showProgressBar is None:
+        showProgressBar = (verbosity > 0)
 
-  explore = y is None
+    explore = y is None
 
-  # Re-assert default arguments if NA/None/NaN are passed to them
-  p = explore if p is None else p
-  k = 0 if k is None else k
-  if E is None:
-    E = [2]
-  elif type(E) == int:
-    E = [E]
-  else:
-    E = [e for e in E if e is not None]
-
-  if type(theta) == int:
-    theta = [float(theta)]
-  elif type(theta) == float:
-    theta = [theta]
-
-  if type(library) == int:
-    library = [library]
-
-  k = -1 if k == float("inf") else k
-
-  panelWeight = -1 if panelWeight == float("inf") else panelWeight
-
-  res = run_command(t, x, y, copredict, panel,
-                     E, tau, theta, library,
-                     k, algorithm=algorithm, numReps=numReps,
-                     p=p, crossfold=crossfold, full=full, shuffle=shuffle,
-                     saveFinalPredictions=savePredictions,
-                     saveFinalCoPredictions=saveCoPredictions,
-                     saveManifolds=saveManifolds,
-                     saveSMAPCoeffs=saveSMAPCoeffs,
-                     extras=extras, allowMissing=allowMissing,
-                     missingDistance=missingDistance,
-                     dt=dt, reldt=reldt, dtWeight=dtWeight,
-                     numThreads=numThreads, panelWeight=panelWeight,
-                     panelWeights=panelWeights, verbosity=verbosity,
-                     showProgressBar=showProgressBar, lowMemory=lowMemory,
-                     predictWithPast=predictWithPast, saveInputs=saveInputs)
-
-  if res["rc"] == 0:
-    if verbosity > 1:
-      print("Finished successfully!")
-
-    res["stats"] = pd.DataFrame(res["stats"])
-    df = res["stats"].dropna()
-
-    if verbosity > 1:
-      print(f"Number of non-missing stats: {df.shape[0]}")
-
-    if df.shape[0] > 1:
-        res["summary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
+    # Re-assert default arguments if NA/None/NaN are passed to them
+    p = explore if p is None else p
+    k = 0 if k is None else k
+    if E is None:
+        E = [2]
+    elif type(E) == int:
+        E = [E]
     else:
-      res["summary"] = res["stats"]
+        E = [e for e in E if e is not None]
 
-    if verbosity > 0:
-      print("Summary of predictions")
-      print(res["summary"])
+    if type(theta) == int:
+        theta = [float(theta)]
+    elif type(theta) == float:
+        theta = [theta]
 
-      if res["kMin"] is not None and res["kMax"] is not None:
-        if res["kMin"] == res["kMax"]:
-          print(f"Number of neighbours (k) is set to {res['kMin']}")
+    if type(library) == int:
+        library = [library]
+
+    k = -1 if k == float("inf") else k
+
+    panelWeight = -1 if panelWeight == float("inf") else panelWeight
+
+    res = run_command(t, x, y, copredict, panel,
+                      E, tau, theta, library,
+                      k, algorithm=algorithm, numReps=numReps,
+                      p=p, crossfold=crossfold, full=full, shuffle=shuffle,
+                      saveFinalPredictions=savePredictions,
+                      saveFinalCoPredictions=saveCoPredictions,
+                      saveManifolds=saveManifolds,
+                      saveSMAPCoeffs=saveSMAPCoeffs,
+                      extras=extras, allowMissing=allowMissing,
+                      missingDistance=missingDistance,
+                      dt=dt, reldt=reldt, dtWeight=dtWeight,
+                      numThreads=numThreads, panelWeight=panelWeight,
+                      panelWeights=panelWeights, verbosity=verbosity,
+                      showProgressBar=showProgressBar, lowMemory=lowMemory,
+                      predictWithPast=predictWithPast, saveInputs=saveInputs)
+
+    if res["rc"] == 0:
+        if verbosity > 1:
+            print("Finished successfully!")
+
+        res["stats"] = pd.DataFrame(res["stats"])
+        df = res["stats"].dropna()
+
+        if verbosity > 1:
+            print(f"Number of non-missing stats: {df.shape[0]}")
+
+        if df.shape[0] > 1:
+                res["summary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
         else:
-          print("Number of neighbours (k) is set to between ",
-            res["kMin"], " and ", res["kMax"])
+            res["summary"] = res["stats"]
 
-    if copredict is not None:
-      res["copredStats"] = pd.DataFrame(res["copredStats"])
-      df = res["copredStats"].dropna()
+        if verbosity > 0:
+            print("Summary of predictions")
+            print(res["summary"])
 
-      if df.shape[0] > 1:
-        res["copredSummary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
-      else:
-        res["copredSummary"] = res["copredStats"]
+            if res["kMin"] is not None and res["kMax"] is not None:
+                if res["kMin"] == res["kMax"]:
+                    print(f"Number of neighbours (k) is set to {res['kMin']}")
+                else:
+                    print("Number of neighbours (k) is set to between ",
+                        res["kMin"], " and ", res["kMax"])
 
-      if verbosity > 0:
-        print("Summary of copredictions")
-        print(res["copredSummary"])
-  else:
-    print("Error code:", res["rc"])
+        if copredict is not None:
+            res["copredStats"] = pd.DataFrame(res["copredStats"])
+            df = res["copredStats"].dropna()
 
-  return res
+            if df.shape[0] > 1:
+                res["copredSummary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
+            else:
+                res["copredSummary"] = res["copredStats"]
+
+            if verbosity > 0:
+                print("Summary of copredictions")
+                print(res["copredSummary"])
+    else:
+        print("Error code:", res["rc"])
+
+    return res
