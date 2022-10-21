@@ -55,7 +55,7 @@ class TestCI(unittest.TestCase):
         t = t[299:]
 
         # Some normal rv's from Stata using the seed '12345678'
-        u1 = np.array(RAND_200)
+        u1 = np.array(NORM_200)
 
         # explore x, e(2/10)
         res = edm(t, x, E=range(2, 10 + 1))
