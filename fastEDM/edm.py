@@ -322,7 +322,7 @@ def edm(t, x, y = None, panel = None, E=2, tau=1, theta=1.0, library=None,
             print(f"Number of non-missing stats: {df.shape[0]}")
 
         if df.shape[0] > 1:
-                res["summary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
+            res["summary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean().reset_index()
         else:
             res["summary"] = res["stats"]
 
@@ -342,7 +342,7 @@ def edm(t, x, y = None, panel = None, E=2, tau=1, theta=1.0, library=None,
             df = res["copredStats"].dropna()
 
             if df.shape[0] > 1:
-                res["copredSummary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean()
+                res["copredSummary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean().reset_index()
             else:
                 res["copredSummary"] = res["copredStats"]
 
