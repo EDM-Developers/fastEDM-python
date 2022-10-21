@@ -89,8 +89,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         return 3
 
     idx_max_rho = np.argmax(res["summary"]["rho"])
-    E_best = int(res["stats"]["E"][idx_max_rho])
-    # TODO: uses ["stats"] instead of summary
+    E_best = int(res["summary"]["E"][idx_max_rho])
 
     if (verbosity > 0):
         print(f"Found optimal embedding dimension E to be {E_best}.")
