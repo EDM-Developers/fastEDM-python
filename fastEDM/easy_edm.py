@@ -117,7 +117,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
               shuffle = True, verbosity = 0, showProgressBar = showProgressBar)
 
     # Make some rough guesses for the Monster exponential fit coefficients
-    ccmRes = res["stats"]
+    ccmRes = res["summary"]
     firstLibrary = np.asarray(ccmRes["library"][0])
     firstRho = np.asarray(ccmRes["rho"])[0]
     finalRho = np.asarray(ccmRes["rho"])[-1]
