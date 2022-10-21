@@ -3,7 +3,7 @@ import pandas as pd
 import unittest
 
 from fastEDM import edm, create_manifold
-from tests.helper import *
+from helper import *
 
 
 class TestCI(unittest.TestCase):

@@ -3,7 +3,7 @@ import pandas as pd
 import unittest
 
 from fastEDM import easy_edm
-from tests.helper import logistic_map
+from helper import logistic_map
 
 
 class TestEasyEdm(unittest.TestCase):
