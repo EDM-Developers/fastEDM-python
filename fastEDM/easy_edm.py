@@ -1,4 +1,5 @@
 from scipy.optimize import minimize
+from scipy.stats import ks_2samp
 import numpy as np
 import math
 
@@ -37,11 +38,6 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     if not showProgressBar:
         showProgressBar = verbosity > 0
 
-    # If doing a rigorous check, begin by seeing if the cause & effect
-    # variable appear to be non-linear dynamical system outputs, or just
-    # random noise.
-    # TODO
-
     # First find out the embedding dimension of the causal variable
     givenTimeSeriesNames = data is not None
     if givenTimeSeriesNames:
@@ -77,6 +73,9 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         x = (x - x.mean()) / x.std()
         y = (y - y.mean()) / y.std()
 
+    # ---------------------------------------------------------------------------------------
+    # Find optimal E using simplex projection
+
     res = edm(t, y, E = list(range(3,10 + 1)), 
               verbosity = 0, showProgressBar = showProgressBar)
 
@@ -93,6 +92,47 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
 
     if (verbosity > 0):
         print(f"Found optimal embedding dimension E to be {E_best}.")
+
+    # ---------------------------------------------------------------------------------------
+    # Test for non-linearity using S-Map
+    debug = True
+    
+    max_theta, theta_step, theta_reps = 10, 0.1, 20 # !! Parameterise these values later
+    
+    theta_values = [ t * theta_step for t in range(0, math.ceil(max_theta / theta_step)) ]
+
+    # Calculate predictive accuracy over theta 0 to 10
+    res = edm(t, y, E = E_best, theta = theta_values,
+              verbosity = 0, showProgressBar = showProgressBar)
+    summary = res['summary']
+
+    if (debug):
+        print(f"Summary:\n{summary}")
+
+    # Find optimal value of theta
+    optIndex = summary['rho'].idxmax()
+    optTheta = summary.iloc[optIndex]['theta']
+    optRho   = round(summary.iloc[optIndex]['rho'], 5)
+
+    if (verbosity > 0):
+        print(f"Found optimal theta to be {optTheta}, with rho = {optRho}.")
+
+    # Kolmogorov-Smirnov test: optimal theta against theta = 0
+    resBase = edm(t, y, E = E_best, theta = 0, numReps = theta_reps,
+                  verbosity = 0, showProgressBar = showProgressBar)
+    resOpt  = edm(t, y, E = E_best, theta = float(optTheta), numReps = theta_reps,
+                  verbosity = 0, showProgressBar = showProgressBar)
+        
+    sampleBase, sampleOpt =  resBase['stats']['rho'], resOpt['stats']['rho']
+    
+    ksTest = ks_2samp(sampleOpt, sampleBase, alternative='less')
+    ksStat, ksPVal = round(ksTest.statistic, 5), round(ksTest.pvalue, 5)
+    
+    if (verbosity > 0):
+        print(f"Found Kolmogorov-Smirnov test statistic to be {ksStat} with p-value={ksPVal}.")
+
+    # ---------------------------------------------------------------------------------------
+    # Test for causality using CCM
 
     # Find the maximum library size using S-map and this E selection
     res = edm(t, y, E = E_best, algorithm = "smap", 
