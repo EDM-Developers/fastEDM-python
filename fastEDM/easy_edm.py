@@ -5,6 +5,7 @@ import math
 
 from fastEDM import edm
 
+debug = True
 
 #' easy_edm
 #'
@@ -76,6 +77,9 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     # ---------------------------------------------------------------------------------------
     # Find optimal E using simplex projection
 
+    if (debug):
+        print(f"\n=== Finding optimal E using simplex projection.")
+
     res = edm(t, y, E = list(range(3,10 + 1)), 
               verbosity = 0, showProgressBar = showProgressBar)
 
@@ -94,8 +98,9 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         print(f"Found optimal embedding dimension E to be {E_best}.")
 
     # ---------------------------------------------------------------------------------------
-    # Test for non-linearity using S-Map
-    debug = True
+    # Test for non-linearity using S-Map    
+    if (verbosity > 0):
+        print(f"\n=== Testing for non-linearity using S-Map.")
     
     max_theta, theta_step, theta_reps = 10, 0.1, 20 # !! Parameterise these values later
     
@@ -106,8 +111,8 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
               verbosity = 0, showProgressBar = showProgressBar)
     summary = res['summary']
 
-    if (debug):
-        print(f"Summary:\n{summary}")
+    # if (debug):
+    #     print(f"Summary:\n{summary}")
 
     # Find optimal value of theta
     optIndex = summary['rho'].idxmax()
@@ -133,6 +138,9 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
 
     # ---------------------------------------------------------------------------------------
     # Test for causality using CCM
+
+    if (debug):
+        print(f"\n=== Testing for causality using CCM.")
 
     # Find the maximum library size using S-map and this E selection
     res = edm(t, y, E = E_best, algorithm = "smap", 
