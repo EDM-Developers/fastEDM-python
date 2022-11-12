@@ -99,7 +99,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
 
     # ---------------------------------------------------------------------------------------
     # Test for non-linearity using S-Map    
-    if (verbosity > 0):
+    if (debug):
         print(f"\n=== Testing for non-linearity using S-Map.")
     
     max_theta, theta_step, theta_reps = 10, 0.1, 20 # !! Parameterise these values later
