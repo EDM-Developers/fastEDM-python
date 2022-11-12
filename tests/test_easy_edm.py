@@ -19,6 +19,7 @@ class TestEasyEdm(unittest.TestCase):
         df = pd.DataFrame({"x": x, "y":y})
 
         # Check that passing the data via a dataframe works.
+        print("\n>>> Test 1")
         xCCMCausesY = easy_edm("x", "y", data = df)
         assert xCCMCausesY == True
 
@@ -26,6 +27,7 @@ class TestEasyEdm(unittest.TestCase):
         # assert yCCMCausesX == True
 
         # Check that passing the raw data is also fine.
+        print("\n>>> Test 2")
         xCCMCausesY = easy_edm(x, y)
         assert xCCMCausesY == True
         
@@ -33,16 +35,20 @@ class TestEasyEdm(unittest.TestCase):
         url = "https://github.com/EDM-Developers/fastEDM/raw/master/vignettes/chicago.csv"
         chicago = pd.read_csv(url)
         
+        print("\n>>> Test 1")
         crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data = chicago)
         assert crimeCCMCausesTemp == False
 
+        print("\n>>> Test 2")
         tempCCMCausesCrime = easy_edm("Temperature", "Crime", data = chicago)
         assert tempCCMCausesCrime == True
 
         # Check that the results still hold up if we don't normalize the inputs
+        print("\n>>> Test 3")
         crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data = chicago, normalize = False)
         assert crimeCCMCausesTemp == False
 
+        print("\n>>> Test 4")
         tempCCMCausesCrime = easy_edm("Temperature", "Crime", data = chicago, normalize = False)
         assert tempCCMCausesCrime == True
     
