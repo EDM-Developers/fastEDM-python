@@ -2,6 +2,7 @@ from scipy.optimize import minimize
 from scipy.stats import ks_2samp
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 from fastEDM import edm
 
@@ -102,17 +103,17 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     if (debug):
         print(f"\n=== Testing for non-linearity using S-Map.")
     
-    max_theta, theta_step, theta_reps = 10, 0.1, 20 # !! Parameterise these values later
+    max_theta, num_thetas, theta_reps = 5, 100, 20 # !! Parameterise these values later
     
-    theta_values = [ t * theta_step for t in range(0, math.ceil(max_theta / theta_step)) ]
+    theta_values = np.linspace(0, max_theta, 1 + num_thetas)
 
-    # Calculate predictive accuracy over theta 0 to 10
-    res = edm(t, y, E = E_best, theta = theta_values,
+    # Calculate predictive accuracy over theta 0 to 'max_theta'
+    res = edm(t, y, E = E_best, theta = theta_values, algorithm="smap", k=float("inf"),
               verbosity = 0, showProgressBar = showProgressBar)
     summary = res['summary']
 
-    # if (debug):
-    #     print(f"Summary:\n{summary}")
+    if (debug):
+        print(f"Summary:\n{summary}")
 
     # Find optimal value of theta
     optIndex = summary['rho'].idxmax()
@@ -122,13 +123,25 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     if (verbosity > 0):
         print(f"Found optimal theta to be {optTheta}, with rho = {optRho}.")
 
+    if (verbosity > 1):
+        # Plot the rho-theta curve.
+        plt.plot(summary["theta"], summary["rho"])
+        plt.xlabel("theta")
+        plt.ylabel("rho")
+        plt.axvline(optTheta, ls="--", c="k")
+        plt.show()
+
     # Kolmogorov-Smirnov test: optimal theta against theta = 0
-    resBase = edm(t, y, E = E_best, theta = 0, numReps = theta_reps,
+    resBase = edm(t, y, E = E_best, theta = 0, numReps = theta_reps, k=20, algorithm="smap",
                   verbosity = 0, showProgressBar = showProgressBar)
-    resOpt  = edm(t, y, E = E_best, theta = float(optTheta), numReps = theta_reps,
+    resOpt  = edm(t, y, E = E_best, theta = float(optTheta), numReps = theta_reps, k=20, algorithm="smap",
                   verbosity = 0, showProgressBar = showProgressBar)
         
-    sampleBase, sampleOpt =  resBase['stats']['rho'], resOpt['stats']['rho']
+    sampleBase, sampleOpt = resBase['stats']['rho'], resOpt['stats']['rho']
+    if (debug):
+        print(f"Theta=0:\n{sampleBase}")
+        print(f"Theta>0:\n{sampleOpt}")
+        print()
     
     ksTest = ks_2samp(sampleOpt, sampleBase, alternative='less')
     ksStat, ksPVal = round(ksTest.statistic, 5), round(ksTest.pvalue, 5)
@@ -205,7 +218,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         ccmRho = round(monsterFit["rhoInfinity"], 2)
         print(f"The CCM fit is (alpha, gamma, rhoInfinity) = ({ccmAlpha}, {ccmGamma}, {ccmRho}).")
     elif (verbosity == 1):
-        ccmRho = {round(monsterFit["rhoInfinity"], 2)}
+        ccmRho = round(monsterFit["rhoInfinity"], 2)
         print(f"The CCM final rho was {ccmRho}")
 
     if (monsterFit["rhoInfinity"] > 0.7):
