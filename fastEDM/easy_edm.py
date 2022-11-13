@@ -40,7 +40,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     if not showProgressBar:
         showProgressBar = verbosity > 0
 
-    # First find out the embedding dimension of the causal variable
+    # Convert time series to arrays (they can be supplied as columns of a dataframe).
     givenTimeSeriesNames = data is not None
     if givenTimeSeriesNames:
         if verbosity > 0:
@@ -76,12 +76,11 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         y = (y - y.mean()) / y.std()
 
     # ---------------------------------------------------------------------------------------
-    # Find optimal E using simplex projection
-
+    # Find optimal E (embedding dimension) of the causal variable using simplex projection
     if (debug):
         print(f"\n=== Finding optimal E using simplex projection.")
 
-    res = edm(t, y, E = list(range(3,10 + 1)), 
+    res = edm(t, x, E = list(range(3, 10 + 1)),
               verbosity = 0, showProgressBar = showProgressBar)
 
     if res["rc"] > 0:
@@ -108,7 +107,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     theta_values = np.linspace(0, max_theta, 1 + num_thetas)
 
     # Calculate predictive accuracy over theta 0 to 'max_theta'
-    res = edm(t, y, E = E_best, theta = theta_values, algorithm="smap", k=float("inf"),
+    res = edm(t, x, E = E_best, theta = theta_values, algorithm="smap", k=float("inf"),
               verbosity = 0, showProgressBar = showProgressBar)
     summary = res['summary']
 
@@ -132,9 +131,9 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         plt.show()
 
     # Kolmogorov-Smirnov test: optimal theta against theta = 0
-    resBase = edm(t, y, E = E_best, theta = 0, numReps = theta_reps, k=20, algorithm="smap",
+    resBase = edm(t, x, E = E_best, theta = 0, numReps = theta_reps, k=20, algorithm="smap",
                   verbosity = 0, showProgressBar = showProgressBar)
-    resOpt  = edm(t, y, E = E_best, theta = float(optTheta), numReps = theta_reps, k=20, algorithm="smap",
+    resOpt  = edm(t, x, E = E_best, theta = float(optTheta), numReps = theta_reps, k=20, algorithm="smap",
                   verbosity = 0, showProgressBar = showProgressBar)
         
     sampleBase, sampleOpt = resBase['stats']['rho'], resOpt['stats']['rho']
