@@ -1,2 +1,2 @@
-from _fastEDM import run_command
+import _fastEDM
 from .edm import edm, create_manifold

@@ -226,7 +226,7 @@ import pandas as pd
 #'  x = c(11, 12, 13, 14, 15, 16, 17, 18)
 #'  res = edm(t, x)
 #
-def edm(t, x, y = None, panel = None, E=2, tau=1, theta=1.0, library=None,
+def edm(t, x, y = None, *, panel = None, E=2, tau=1, theta=1.0, library=None,
         k=0, algorithm="simplex", p=None, crossfold=0, full=False,
         shuffle=False, copredict = None, savePredictions=False,
         saveCoPredictions=False, saveManifolds=False,
