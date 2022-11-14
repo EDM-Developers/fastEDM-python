@@ -1,11 +1,9 @@
-import fastEDM as m
+from fastEDM import _fastEDM as m
 from pathlib import Path
 import unittest
 
 class TestPyBind(unittest.TestCase):
     def test_pybind11(self):
-        # assert m.__version__ == 'dev'
-
         t = list(range(10))
         x = list(range(10))
 
