@@ -6,16 +6,16 @@ import matplotlib.pyplot as plt
 
 from fastEDM import edm
 
-debug = True
+DEBUG = True
 
 
 def easy_edm(cause, effect, time = None, data = None, direction = "oneway", 
              verbosity = 1, showProgressBar = None, normalize = True):
     '''
     Simplified interface for EDM function
-    ...
+    ------------------------------------------------------------------------------------------
     Parameters
-    ----------
+    ------------------------------------------------------------------------------------------
     cause : str or list  
         The causal time series (as a string or a vector).
     effect : str or list 
@@ -34,8 +34,9 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         Whether or not to print out a progress bar during the computations.
     normalize : bool
         Whether to normalize the inputs before starting EDM.
+    ------------------------------------------------------------------------------------------
     Returns
-    ----------
+    ------------------------------------------------------------------------------------------
     bool: Indicator for if evidence of causation was found.
     '''
 
@@ -48,19 +49,25 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     # Convert time series to arrays (they can be supplied as columns of a dataframe).
     t, x, y = preprocess_inputs(data, cause, effect, time, verbosity, normalize)
 
-    if (debug):
+    if (DEBUG):
         print(f"\n=== Finding optimal E using simplex projection.")
         
     # Find optimal E (embedding dimension) of the causal variable using simplex projection
     E_best = find_embedding_dimension(t, x, verbosity, showProgressBar)
-
-    if (debug):
-        print(f"\n=== Testing for non-linearity using S-Map.")
-        
-    # Test for non-linearity using S-Map    
-    test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, showProgressBar)
     
-    if (debug):
+    if (DEBUG):
+        print(f"\n=== Testing for non-linearity using S-Map.")
+    
+    # Test for non-linearity using S-Map    
+    optTheta = test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, showProgressBar)
+    
+    if (DEBUG):
+        print(f"\n=== Testing for delay effect of x on y.")
+        
+    # Find optimal lag for the y (effect) time series
+    y, data = get_optimal_lag(t, x, y, data, effect, E_best, verbosity, showProgressBar, maxLag = 5) # , optTheta) <- ? pass this in
+
+    if (DEBUG):
         print(f"\n=== Testing for causality using CCM.")
         
     # Perform cross-mapping (CCM)
@@ -155,12 +162,12 @@ def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity
               verbosity = 0, showProgressBar = showProgressBar)
     summary = res['summary']
 
-    if (debug):
+    if (DEBUG):
         print(f"Summary:\n{summary}")
 
     # Find optimal value of theta
     optIndex = summary['rho'].idxmax()
-    optTheta = summary.iloc[optIndex]['theta']
+    optTheta = float(summary.iloc[optIndex]['theta'])
     optRho   = round(summary.iloc[optIndex]['rho'], 5)
 
     if (verbosity > 0):
@@ -177,14 +184,14 @@ def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity
     # Kolmogorov-Smirnov test: optimal theta against theta = 0
     resBase = edm(t, x, E = E_best, theta = 0, numReps = theta_reps, k=20, algorithm="smap",
                   verbosity = 0, showProgressBar = showProgressBar)
-    resOpt  = edm(t, x, E = E_best, theta = float(optTheta), numReps = theta_reps, k=20, algorithm="smap",
+    resOpt  = edm(t, x, E = E_best, theta = optTheta, numReps = theta_reps, k=20, algorithm="smap",
                   verbosity = 0, showProgressBar = showProgressBar)
         
     sampleBase, sampleOpt = resBase['stats']['rho'], resOpt['stats']['rho']
-    if (debug):
-        print(f"Theta=0:\n{sampleBase}")
-        print(f"Theta>0:\n{sampleOpt}")
-        print()
+    
+    if (DEBUG):
+        print(f"Theta=0:\n{resBase['stats']}")
+        print(f"Theta>0:\n{resOpt['stats']}\n")
     
     ksTest = ks_2samp(sampleOpt, sampleBase, alternative='less')
     ksStat, ksPVal = round(ksTest.statistic, 5), round(ksTest.pvalue, 5)
@@ -192,7 +199,7 @@ def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity
     if (verbosity > 0):
         print(f"Found Kolmogorov-Smirnov test statistic to be {ksStat} with p-value={ksPVal}.")
 
-    return
+    return optTheta
 
 
 def cross_mapping(t, x, y, E_best, verbosity, showProgressBar):
@@ -283,3 +290,55 @@ def test_convergence_monster(res, data, cause, effect, verbosity):
         print(f"{causalSummary} of CCM causation found.")
 
     return monsterFit["rhoInfinity"] > 0.5
+
+
+def tslag(t, x, lag=1, dt=1):
+    '''
+    Time series lag
+    '''
+    t = np.asarray(t)
+    x = np.asarray(x)
+    l_x = np.full(len(t), np.nan)
+    for i in range(len(t)):
+        lagged_t = t[i] - lag * dt
+        if not np.isnan(lagged_t) and lagged_t in t:
+            l_x[i] = x[t == lagged_t]
+            
+    return l_x
+
+
+def get_optimal_lag(t, x, y, data, effect, E_best, verbosity, showProgressBar, maxLag=5, theta=1):
+    '''
+    Find optimal lag for the y (effect) time series
+    '''
+    rhos = {}
+    for i in range(-maxLag, maxLag + 1):
+        res = edm(t, x, tslag(t, y, i), E = E_best, theta = theta, dt=True,
+                  algorithm="smap", k=float("inf"), verbosity = 0, showProgressBar = showProgressBar)
+        rhos[i] = float(res['summary']['rho'])
+
+    optLag = max(rhos, key=rhos.get)
+
+    if (DEBUG):
+        print("Lagged Rhos:")
+        for k, v in rhos.items():
+            print("Lag " + ("+" if k >= 0 else "") + str(k) + ": " + str(round(v, 7)))
+    
+    if (verbosity > 0): 
+        print(f'Found optimal lag to be {optLag} with rho={rhos[optLag]}')
+    
+    # Not sure if this is the intended behaviour for retrocausality
+    invalidLag = optLag < 0
+    if invalidLag:
+        validRhos = {k: v for k, v in rhos if k >= 0}
+        optLag = max(validRhos, key=validRhos.get)
+        
+    if invalidLag and (verbosity > 0):
+        print(f'This may indicate retrocausality, using alternate lag of {optLag} with rho={rhos[optLag]}')
+    
+    # Transform y and data to match optimal lagged series
+    y = tslag(t, y, optLag)
+    if data is not None:
+        data[effect] = data[effect].shift(optLag)
+    
+    return y, data
