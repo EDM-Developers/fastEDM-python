@@ -253,6 +253,7 @@ def edm(t, x, y = None, *, panel = None, E=2, tau=1, theta=1.0, library=None,
   if panel is not None and len(panel) > 0:
     if len(t) != len(panel):
       raise ValueError("The panel id variable is the wrong len")
+    panel = np.asarray(panel)
 
   if copredict is not None and len(copredict) > 0:
     if len(t) != len(copredict):
