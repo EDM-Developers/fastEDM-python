@@ -363,7 +363,7 @@ def test_convergence_dist(t, y, x, libraryMax, E_best, theta, verbosity, showPro
     finalRho = float(finalRes["summary"]["rho"])
     
     threshold = np.quantile(dist, quantile)
-    rhoQuantile = (dist<finalRho).mean()
+    rhoQuantile = np.count_nonzero(dist<finalRho) / dist.size
     
     if verbosity >= 1:
         print(f"Found 95th quantile of {round(threshold, 5)} for rho distribution at library=E+2")
