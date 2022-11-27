@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from fastEDM import edm
 
-DEBUG = True
+DEBUG = False
 
 
 def easy_edm(cause, effect, time = None, data = None, direction = "oneway", 
@@ -65,25 +65,27 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         print(f"\n=== Testing for delay effect of x on y.")
         
     # Find optimal lag for the y (effect) time series
-    y, data = get_optimal_lag(t, x, y, data, effect, E_best, verbosity, showProgressBar, maxLag = 5) # , optTheta) <- ? pass this in
+    y, data = get_optimal_lag(t, x, y, data, effect, E_best, verbosity, showProgressBar, optTheta, maxLag = 5)
 
     if (DEBUG):
         print(f"\n=== Testing for causality using CCM.")
         
     # Perform cross-mapping (CCM)
-    res = cross_mapping(t, x, y, E_best, verbosity, showProgressBar)
+    libraryMax, res = cross_mapping(t, x, y, E_best, verbosity, showProgressBar)
+    
+    # Purely for development
+    convergence_method = "other"
     
     # Test for causality using CCM
     if convergence_method == "parametric":
-        conv_test = test_convergence_monster
+        result = test_convergence_monster(data, cause, effect, verbosity)
     elif convergence_method == "hypothesis":
-        conv_test = test_convergence_monster # Replace this later
+        result = test_convergence_monster # Replace this later
     else:
-        conv_test = test_convergence_monster # Replace this later
-    
-    outcome = conv_test(res, data, cause, effect, verbosity)
-    
-    return outcome
+        result = test_convergence_dist(t, y, x, libraryMax, E_best, optTheta, verbosity, 
+                                       showProgressBar, numReps = 100, quantile = 0.95)
+        
+    return result
 
 
 def preprocess_inputs(data, cause, effect, time, verbosity, normalize):
@@ -202,7 +204,59 @@ def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity
     return optTheta
 
 
-def cross_mapping(t, x, y, E_best, verbosity, showProgressBar):
+def tslag(t, x, lag=1, dt=1):
+    '''
+    Time series lag
+    '''
+    t = np.asarray(t)
+    x = np.asarray(x)
+    l_x = np.full(len(t), np.nan)
+    for i in range(len(t)):
+        lagged_t = t[i] - lag * dt
+        if not np.isnan(lagged_t) and lagged_t in t:
+            l_x[i] = x[t == lagged_t]
+            
+    return l_x
+
+
+def get_optimal_lag(t, x, y, data, effect, E_best, verbosity, showProgressBar, theta=1, maxLag=5):
+    '''
+    Find optimal lag for the y (effect) time series
+    '''
+    rhos = {}
+    for i in range(-maxLag, maxLag + 1):
+        res = edm(t, x, tslag(t, y, i), E = E_best, theta = theta, dt=True,
+                  algorithm="smap", k=float("inf"), verbosity = 0, showProgressBar = showProgressBar)
+        rhos[i] = float(res['summary']['rho'])
+
+    optLag = max(rhos, key=rhos.get)
+
+    if (DEBUG):
+        print("Lagged Rhos:")
+        for k, v in rhos.items():
+            print("Lag " + ("+" if k >= 0 else "") + str(k) + ": " + str(round(v, 7)))
+    
+    if (verbosity > 0): 
+        print(f'Found optimal lag to be {optLag} with rho={rhos[optLag]}')
+    
+    # Not sure if this is the intended behaviour for retrocausality
+    invalidLag = optLag < 0
+    if invalidLag:
+        validRhos = {k: v for k, v in rhos if k >= 0}
+        optLag = max(validRhos, key=validRhos.get)
+        
+    if invalidLag and (verbosity > 0):
+        print(f'This may indicate retrocausality, using alternate lag of {optLag} with rho={rhos[optLag]}')
+    
+    # Transform y and data to match optimal lagged series
+    y = tslag(t, y, optLag)
+    if data is not None:
+        data[effect] = data[effect].shift(optLag)
+    
+    return y, data
+
+
+def cross_mapping(t, x, y, E_best, verbosity, showProgressBar, theta=1):
     '''
     Find the maximum library size using S-map and this E selection
     '''
@@ -224,11 +278,12 @@ def cross_mapping(t, x, y, E_best, verbosity, showProgressBar):
     libraries = [math.ceil(libraryStart + step * k) for k in range(25)]
 
     # Next run the convergent cross-mapping (CCM), using the effect to predict the cause.
-    return edm(t, y, x, E = E_best, library = libraries, algorithm = "smap", k = np.inf, 
-              shuffle = True, verbosity = 0, showProgressBar = showProgressBar)
+    return libraryMax, edm(t, y, x, E = E_best, library = libraries, theta = theta, 
+                           algorithm = "smap", k = np.inf, shuffle = True, verbosity = 0, 
+                           showProgressBar = showProgressBar)
 
 
-def test_convergence_monster(res, data, cause, effect, verbosity):
+def test_convergence_monster(res, data, cause, effect, verbosity, theta=1):
     '''
     Test for convergence using parametric test (Monster)
     '''
@@ -292,53 +347,34 @@ def test_convergence_monster(res, data, cause, effect, verbosity):
     return monsterFit["rhoInfinity"] > 0.5
 
 
-def tslag(t, x, lag=1, dt=1):
+def test_convergence_dist(t, y, x, libraryMax, E_best, theta, verbosity, showProgressBar, 
+                          numReps = 100, quantile = 0.95):
     '''
-    Time series lag
+    Test for convergence using parametric test (Monster)
     '''
-    t = np.asarray(t)
-    x = np.asarray(x)
-    l_x = np.full(len(t), np.nan)
-    for i in range(len(t)):
-        lagged_t = t[i] - lag * dt
-        if not np.isnan(lagged_t) and lagged_t in t:
-            l_x[i] = x[t == lagged_t]
-            
-    return l_x
-
-
-def get_optimal_lag(t, x, y, data, effect, E_best, verbosity, showProgressBar, maxLag=5, theta=1):
-    '''
-    Find optimal lag for the y (effect) time series
-    '''
-    rhos = {}
-    for i in range(-maxLag, maxLag + 1):
-        res = edm(t, x, tslag(t, y, i), E = E_best, theta = theta, dt=True,
-                  algorithm="smap", k=float("inf"), verbosity = 0, showProgressBar = showProgressBar)
-        rhos[i] = float(res['summary']['rho'])
-
-    optLag = max(rhos, key=rhos.get)
-
-    if (DEBUG):
-        print("Lagged Rhos:")
-        for k, v in rhos.items():
-            print("Lag " + ("+" if k >= 0 else "") + str(k) + ": " + str(round(v, 7)))
+    distRes = edm(t, y, x, E = E_best, library = E_best + 2, numReps = numReps, theta = theta,  
+                  algorithm = "smap", k = np.inf, shuffle = True, verbosity = 0, 
+                  showProgressBar = showProgressBar)
+    dist = distRes['stats']['rho']
     
-    if (verbosity > 0): 
-        print(f'Found optimal lag to be {optLag} with rho={rhos[optLag]}')
+    finalRes = edm(t, y, x, E = E_best, library = libraryMax, theta = theta,  
+                algorithm = "smap", k = np.inf, shuffle = True, verbosity = 0, 
+                showProgressBar = showProgressBar)
+    finalRho = float(finalRes["summary"]["rho"])
     
-    # Not sure if this is the intended behaviour for retrocausality
-    invalidLag = optLag < 0
-    if invalidLag:
-        validRhos = {k: v for k, v in rhos if k >= 0}
-        optLag = max(validRhos, key=validRhos.get)
-        
-    if invalidLag and (verbosity > 0):
-        print(f'This may indicate retrocausality, using alternate lag of {optLag} with rho={rhos[optLag]}')
+    threshold = np.quantile(dist, quantile)
+    rhoQuantile = (dist<finalRho).mean()
     
-    # Transform y and data to match optimal lagged series
-    y = tslag(t, y, optLag)
-    if data is not None:
-        data[effect] = data[effect].shift(optLag)
+    if verbosity >= 1:
+        print(f"Found 95th quantile of {round(threshold, 5)} for rho distribution at library=E+2")
+        print(f"Found final rho was {round(finalRho, 5)}, i.e. quantile={rhoQuantile}")
     
-    return y, data
+    outcome = finalRho > threshold
+    if (outcome):
+        causalSummary = "Strong evidence"
+    else:
+        causalSummary = "No evidence"
+    
+    print(f"{causalSummary} of CCM causation found.")
+    
+    return outcome
