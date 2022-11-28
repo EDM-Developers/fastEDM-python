@@ -81,8 +81,8 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     # Test for causality using CCM
     if convergence_method == "parametric":
         # Perform cross-mapping (CCM)
-        res = cross_mapping(t, x, y, E_best, verbosity, showProgressBar)
-        result = test_convergence_monster(res, data, cause, effect, verbosity)
+        ccmRes = cross_mapping(t, x, y, E_best, libraryMax, optTheta, verbosity, showProgressBar)
+        result = test_convergence_monster(ccmRes, data, cause, effect, verbosity)
     elif convergence_method == "hypothesis":
         result = test_convergence_monster # Replace this later
     else:
@@ -276,7 +276,7 @@ def get_max_library(t, x, y, E_best, showProgressBar):
     return len(res["Ms"][0])
 
 
-def cross_mapping(t, x, y, E_best, verbosity, showProgressBar, libraryMax, theta=1):
+def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar):
     '''
     Find the maximum library size using S-map and this E selection
     '''
