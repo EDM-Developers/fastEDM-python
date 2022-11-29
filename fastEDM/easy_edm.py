@@ -86,8 +86,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     elif convergence_method == "hypothesis":
         result = test_convergence_monster # Replace this later
     else:
-        result = test_convergence_dist(t, y, x, libraryMax, E_best, optTheta, verbosity, 
-                                       showProgressBar, numReps = 1000, quantile = 0.96) # should be .95
+        result = test_convergence_dist(t, y, x, libraryMax, E_best, optTheta, verbosity, showProgressBar)
     return result
 
 
@@ -383,19 +382,19 @@ def test_convergence_dist(t, y, x, libraryMax, E_best, theta, verbosity, showPro
                 showProgressBar = showProgressBar)
     finalRho = float(finalRes["summary"]["rho"])
     
-    threshold = np.quantile(dist, quantile)
+    q975, q95 = np.quantile(dist, 0.975), np.quantile(dist, 0.95)
     rhoQuantile = np.count_nonzero(dist<finalRho) / dist.size
-    
     if verbosity >= 1:
-        print(f"Found 95th quantile of {round(threshold, 5)} for rho distribution at library=E+2")
-        print(f"Found final rho was {round(finalRho, 5)}, i.e. quantile={rhoQuantile}")
+        print(f"At library=E+2, found rho quantiles of {round(q975, 5)} (0.975) and {round(q95, 5)} (0.95)")
+        print(f"At library=max, found final rho was {round(finalRho, 5)}, i.e. quantile={rhoQuantile}")
     
-    outcome = finalRho > threshold
-    if (outcome):
+    if (finalRho > q975):
         causalSummary = "Strong evidence"
+    elif (finalRho > q95):
+        causalSummary = "Some evidence"
     else:
         causalSummary = "No evidence"
     
     print(f"{causalSummary} of CCM causation found.")
     
-    return outcome
+    return finalRho > q975
