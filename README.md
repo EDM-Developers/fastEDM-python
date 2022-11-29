@@ -20,6 +20,26 @@ You can install the development version of fastEDM from
 pip install 'fastEDM @ git+https://github.com/EDM-Developers/fastEDM-python'
 ```
 
+## Example: Chicago crime levels and temperature
+
+This example, looking at the causal links between Chicago’s temperature
+and crime rates, is described in full in our
+[paper](https://jinjingli.github.io/edm/edm-wp.pdf):
+
+``` python
+from fastEDM import easy_edm
+import pandas as pd
+
+url = "https://github.com/EDM-Developers/fastEDM/raw/master/vignettes/chicago.csv"
+chicago = pd.read_csv(url)
+chicago["Crime"] = chicago["Crime"].diff()
+
+crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data=chicago, verbosity=0)
+#> No evidence of CCM causation from Crime to Temperature found.
+tempCCMCausesCrime = easy_edm("Temperature", "Crime", data=chicago, verbosity=0)
+#> Some evidence of CCM causation from Temperature to Crime found.
+```
+
 ## Stata & R Packages
 
 This Python package, and the R `fastEDM` package, is port of our [EDM Stata

@@ -66,18 +66,18 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         print(f"\n=== Testing for delay effect of x on y.")
         
     # Find optimal lag for the y (effect) time series
-    y, data = get_optimal_lag(t, x, y, data, effect, E_best, verbosity, showProgressBar, 
-                              isNonLinear, optTheta, maxLag = 5)
+    #y, data = get_optimal_lag(t, x, y, data, effect, E_best, verbosity, showProgressBar,
+    #                          isNonLinear, optTheta, maxLag = 5)
 
     if (DEBUG):
         print(f"\n=== Testing for causality using CCM.")
         
     # Get max library size
     libraryMax = get_max_library(t, x, y, E_best, showProgressBar) 
-    
+
     # Purely for development
-    convergence_method = "other"
-    
+    convergence_method = "quantile"
+
     # Test for causality using CCM
     if convergence_method == "parametric":
         # Perform cross-mapping (CCM)
@@ -85,8 +85,11 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         result = test_convergence_monster(ccmRes, data, cause, effect, verbosity)
     elif convergence_method == "hypothesis":
         result = test_convergence_monster # Replace this later
-    else:
+    elif convergence_method == "quantile":
         result = test_convergence_dist(t, y, x, libraryMax, E_best, optTheta, verbosity, showProgressBar)
+    else:
+        raise ValueError("Invalid convergence method selected")
+
     return result
 
 
@@ -363,7 +366,7 @@ def test_convergence_monster(res, data, cause, effect, verbosity, theta=1):
     else:
         print(f"{causalSummary} of CCM causation found.")
 
-    return monsterFit["rhoInfinity"] > 0.5
+    return causalSummary
 
 
 def test_convergence_dist(t, y, x, libraryMax, E_best, theta, verbosity, showProgressBar, 
@@ -397,4 +400,4 @@ def test_convergence_dist(t, y, x, libraryMax, E_best, theta, verbosity, showPro
     
     print(f"{causalSummary} of CCM causation found.")
     
-    return finalRho > q975
+    return causalSummary

@@ -21,34 +21,35 @@ class TestEasyEdm(unittest.TestCase):
         # Check that passing the data via a dataframe works.
         print("\n>>> Test 1")
         xCCMCausesY = easy_edm("x", "y", data = df)
-        assert xCCMCausesY == True
+        assert xCCMCausesY == "Strong evidence"
 
         # yCCMCausesX = easy_edm("y", "x", data = df)
-        # assert yCCMCausesX == True
+        # assert yCCMCausesX == "Strong evidence"
 
         # Check that passing the raw data is also fine.
         print("\n>>> Test 2")
         xCCMCausesY = easy_edm(x, y)
-        assert xCCMCausesY == True
+        assert xCCMCausesY == "Strong evidence"
         
     def test_chicago_dataset(self):
         url = "https://github.com/EDM-Developers/fastEDM/raw/master/vignettes/chicago.csv"
         chicago = pd.read_csv(url)
-        
+        chicago["Crime"] = chicago["Crime"].diff()
+
         print("\n>>> Test 1")
         crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data = chicago)
-        assert crimeCCMCausesTemp == False
+        assert crimeCCMCausesTemp == "No evidence"
 
         print("\n>>> Test 2")
         tempCCMCausesCrime = easy_edm("Temperature", "Crime", data = chicago)
-        assert tempCCMCausesCrime == True
+        assert tempCCMCausesCrime != "No evidence"
 
         # Check that the results still hold up if we don't normalize the inputs
         print("\n>>> Test 3")
         crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data = chicago, normalize = False)
-        assert crimeCCMCausesTemp == False
+        assert crimeCCMCausesTemp == "No evidence"
 
         print("\n>>> Test 4")
         tempCCMCausesCrime = easy_edm("Temperature", "Crime", data = chicago, normalize = False)
-        assert tempCCMCausesCrime == True
+        assert tempCCMCausesCrime != "No evidence"
     
