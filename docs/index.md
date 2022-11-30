@@ -65,11 +65,12 @@ This site serves as the primary source of documentation for the package, though 
 
 ## Authors
 
+- [Patrick Laub](https://pat-laub.github.io/) (author, maintainer),
 - [Jinjing Li](https://www.jinjingli.com/) (author),
 - [Michael Zyphur](https://business.uq.edu.au/profile/14074/michael-zyphur) (author),
-- [Patrick Laub](https://pat-laub.github.io/) (author, maintainer),
 - Edoardo Tescari (contributor),
 - Simon Mutch (contributor),
+- Rishi Dhushiyandan (contributor),
 - George Sugihara (originator)
 
 ## Citation
