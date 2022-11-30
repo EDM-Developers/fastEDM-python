@@ -32,7 +32,7 @@ class TestEasyEdm(unittest.TestCase):
         assert xCCMCausesY == "Strong evidence"
         
     def test_chicago_dataset(self):
-        url = "https://github.com/EDM-Developers/fastEDM/raw/master/vignettes/chicago.csv"
+        url = "https://github.com/EDM-Developers/fastEDM-r/raw/main/vignettes/chicago.csv"
         chicago = pd.read_csv(url)
         chicago["Crime"] = chicago["Crime"].diff()
 
