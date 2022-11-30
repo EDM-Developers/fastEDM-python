@@ -47,7 +47,6 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
           "this 'easy_edm automated analysis is still a work-in-progress.")
 
     # Development parameters, remove later!
-    verbosity = 2
     convergence_method = "quantile"
     max_theta = 5
     num_thetas = 100
@@ -575,8 +574,8 @@ def test_convergence_monster(t, x, y, E_best, libraryMax, theta, verbosity, show
 
 def test_convergence_dist(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, numReps = 1000):
     '''
-    Test for convergence by comparing the distribution of rho at library = E + 2 and 
-    a sampled rho at library = max library
+    Test for convergence by comparing the distribution of rho at a small library size and
+    a sampled rho at the maximum library size.
     ------------------------------------------------------------------------------------------
     Parameters
     ------------------------------------------------------------------------------------------
@@ -605,8 +604,9 @@ def test_convergence_dist(t, x, y, E_best, libraryMax, theta, verbosity, showPro
         or 'No evidence'.
     ------------------------------------------------------------------------------------------
     '''
-    
-    distRes = edm(t, y, x, E = E_best, library = E_best + 2, numReps = numReps, theta = theta,  
+    librarySmall = max(E_best + 2, libraryMax // 10)
+
+    distRes = edm(t, y, x, E = E_best, library = librarySmall, numReps = numReps, theta = theta,
                   algorithm = "simplex", k = np.inf, shuffle = True, verbosity = 0, 
                   showProgressBar = showProgressBar)
     dist = distRes['stats']['rho']

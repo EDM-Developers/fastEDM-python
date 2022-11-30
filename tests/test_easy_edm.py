@@ -34,7 +34,6 @@ class TestEasyEdm(unittest.TestCase):
     def test_chicago_dataset(self):
         url = "https://github.com/EDM-Developers/fastEDM-r/raw/main/vignettes/chicago.csv"
         chicago = pd.read_csv(url)
-        chicago["Crime"] = chicago["Crime"].diff()
 
         print("\n>>> Test 1")
         crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data = chicago)

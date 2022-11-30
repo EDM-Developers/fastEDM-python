@@ -32,7 +32,6 @@ import pandas as pd
 
 url = "https://github.com/EDM-Developers/fastEDM-r/raw/main/vignettes/chicago.csv"
 chicago = pd.read_csv(url)
-chicago["Crime"] = chicago["Crime"].diff()
 
 crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data=chicago, verbosity=0)
 #> No evidence of CCM causation from Crime to Temperature found.
