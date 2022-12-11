@@ -62,6 +62,7 @@ This site serves as the primary source of documentation for the package, though 
 - [Patrick Laub](https://pat-laub.github.io/) (author, maintainer),
 - Edoardo Tescari (contributor),
 - Simon Mutch (contributor),
+- Rishi Dhushiyandan (contributor),
 - George Sugihara (originator)
 
 ## Citation
