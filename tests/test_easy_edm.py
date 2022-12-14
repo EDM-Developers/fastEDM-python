@@ -5,6 +5,8 @@ import unittest
 from fastEDM import easy_edm
 from helper import logistic_map
 
+VERBOSITY = 0
+
 
 class TestEasyEdm(unittest.TestCase):
     def test_logistic_map(self):
@@ -20,7 +22,7 @@ class TestEasyEdm(unittest.TestCase):
 
         # Check that passing the data via a dataframe works.
         print("\n>>> Test 1")
-        xCCMCausesY = easy_edm("x", "y", data = df)
+        xCCMCausesY = easy_edm("x", "y", data = df, verbosity=VERBOSITY)
         assert xCCMCausesY == "Strong evidence"
 
         # yCCMCausesX = easy_edm("y", "x", data = df)
@@ -28,7 +30,7 @@ class TestEasyEdm(unittest.TestCase):
 
         # Check that passing the raw data is also fine.
         print("\n>>> Test 2")
-        xCCMCausesY = easy_edm(x, y)
+        xCCMCausesY = easy_edm(x, y, verbosity=VERBOSITY)
         assert xCCMCausesY == "Strong evidence"
         
     def test_chicago_dataset(self):
@@ -36,19 +38,19 @@ class TestEasyEdm(unittest.TestCase):
         chicago = pd.read_csv(url)
 
         print("\n>>> Test 1")
-        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data = chicago)
+        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data = chicago, verbosity=VERBOSITY)
         assert crimeCCMCausesTemp == "No evidence"
 
         print("\n>>> Test 2")
-        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data = chicago)
+        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data = chicago, verbosity=VERBOSITY)
         assert tempCCMCausesCrime != "No evidence"
 
         # Check that the results still hold up if we don't normalize the inputs
         print("\n>>> Test 3")
-        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data = chicago, normalize = False)
+        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data = chicago, normalize = False, verbosity=VERBOSITY)
         assert crimeCCMCausesTemp == "No evidence"
 
         print("\n>>> Test 4")
-        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data = chicago, normalize = False)
+        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data = chicago, normalize = False, verbosity=VERBOSITY)
         assert tempCCMCausesCrime != "No evidence"
     

@@ -40,5 +40,5 @@ setup(
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
     python_requires=">=3.6",
-    install_requires=["numpy", "pandas", "tqdm", "scipy", "matplotlib"],
+    install_requires=["numpy", "pandas", "tqdm", "scipy", "matplotlib", "prettytable"],
 )
