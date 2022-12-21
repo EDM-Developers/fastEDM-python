@@ -11,7 +11,7 @@ class TestCI(unittest.TestCase):
         x, y = logistic_map(4)
         assert np.allclose(x, [0.2000000, 0.5760000, 0.8601754, 0.4266398])
         assert np.allclose(y, [0.4000000, 0.8728000, 0.2174529, 0.5667110])
-    
+
     def test_create_manifold(self):
         # Basic manifold creation [basicManifold]
         E = 2
@@ -28,7 +28,6 @@ class TestCI(unittest.TestCase):
     # formals(edm)$verbosity = 0
     # formals(edm)$showProgressBar = False
 
-
     def test_no_seed_predict_past(self):
         "No seed and predictWithPast=True"
         obs = 10
@@ -42,7 +41,6 @@ class TestCI(unittest.TestCase):
 
         check_edm_result(old, 0.9722)
         check_edm_result(new, 0.99866)
-
 
     def test_simple_manifold(self):
         "Simple manifolds"
@@ -60,7 +58,17 @@ class TestCI(unittest.TestCase):
         # explore x, e(2/10)
         res = edm(t, x, E=range(2, 10 + 1))
         rho = np.array(
-            [0.99893, 0.99879, 0.99835, 0.99763, 0.99457, 0.99385, 0.991, 0.98972, 0.98572]
+            [
+                0.99893,
+                0.99879,
+                0.99835,
+                0.99763,
+                0.99457,
+                0.99385,
+                0.991,
+                0.98972,
+                0.98572,
+            ]
         )
         check_edm_result(res, rho)
 
@@ -191,7 +199,6 @@ class TestCI(unittest.TestCase):
         res = edm(t, x, numThreads=4)
         check_edm_result(res, 0.9989)
 
-
     def test_missing_data_manifolds(self):
         obs = 500
         x, y = logistic_map(obs)
@@ -294,7 +301,6 @@ class TestCI(unittest.TestCase):
         check_noisy_edm_result(res1, 0.35556, 0.40613)
         check_noisy_edm_result(res2, 0.82245, 0.85151)
 
-
     def test_bigger_script(self):
         obs = 100
         x, y = logistic_map(obs)
@@ -338,8 +344,36 @@ class TestCI(unittest.TestCase):
         res1 = edm(t, x, y, allowMissing=True, dt=True, library=range(10, 70 + 5, 5))
         res2 = edm(t, y, x, allowMissing=True, dt=True, library=range(10, 70 + 5, 5))
 
-        rho1 = [ 0.20492, 0.11316, 0.15244, 0.18469, 0.2577, 0.28964, 0.29208, 0.33099, 0.39233, 0.41628, 0.37522, 0.36816, 0.40495 ]
-        rho2 = [ 0.39118, 0.55506, 0.6788, 0.70348, 0.71176, 0.72476, 0.75539, 0.78565, 0.80807, 0.83358, 0.83503, 0.85401, 0.85847 ]
+        rho1 = [
+            0.20492,
+            0.11316,
+            0.15244,
+            0.18469,
+            0.2577,
+            0.28964,
+            0.29208,
+            0.33099,
+            0.39233,
+            0.41628,
+            0.37522,
+            0.36816,
+            0.40495,
+        ]
+        rho2 = [
+            0.39118,
+            0.55506,
+            0.6788,
+            0.70348,
+            0.71176,
+            0.72476,
+            0.75539,
+            0.78565,
+            0.80807,
+            0.83358,
+            0.83503,
+            0.85401,
+            0.85847,
+        ]
         check_edm_results(res1, res2, rho1, rho2)
 
         # See if the negative values of p are allowed
@@ -431,7 +465,6 @@ class TestCI(unittest.TestCase):
         # res1 = edm(t, x, y, library=[5, 10, 20, 40], copredict=u1, numReps=4)
         # res2 = edm(t, y, x, library=[5, 10, 20, 40], copredict=u1, numReps=4)
 
-
     def test_panel_data(self):
         obs = 100
         x, y = logistic_map(obs)
@@ -470,10 +503,13 @@ class TestCI(unittest.TestCase):
         check_edm_results(res1, res2, 0.76444, 0.83836)
 
         # edm xmap x y, e(40) idw(-1) allowmissing
-        res1 = edm(t, x, y, panel=panel, E=40, panelWeight=float("inf"), allowMissing=True)
-        res2 = edm(t, y, x, panel=panel, E=40, panelWeight=float("inf"), allowMissing=True)
+        res1 = edm(
+            t, x, y, panel=panel, E=40, panelWeight=float("inf"), allowMissing=True
+        )
+        res2 = edm(
+            t, y, x, panel=panel, E=40, panelWeight=float("inf"), allowMissing=True
+        )
         check_edm_results(res1, res2, 0.55937, 0.75815)
-
 
     def test_panel_data_with_missing_observations(self):
         obs = 100
@@ -525,10 +561,15 @@ class TestCI(unittest.TestCase):
 
         # edm explore x, e(5) idw(-1) reldt allowmissing
         res = edm(
-            t, x, panel=panel, E=5, panelWeight=float("inf"), reldt=True, allowMissing=True
+            t,
+            x,
+            panel=panel,
+            E=5,
+            panelWeight=float("inf"),
+            reldt=True,
+            allowMissing=True,
         )
         check_edm_result(res, 0.75709)
-
 
     def test_bad_inputs(self):
         obs = 500

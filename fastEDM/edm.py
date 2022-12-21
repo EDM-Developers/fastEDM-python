@@ -2,15 +2,44 @@ from _fastEDM import *
 import numpy as np
 import pandas as pd
 
-def edm(t, x, y = None, *, panel = None, E=2, tau=1, theta=1.0, library=None,
-        k=0, algorithm="simplex", p=None, crossfold=0, full=False,
-        shuffle=False, copredict = None, savePredictions=False,
-        saveCoPredictions=False, saveManifolds=False,
-        saveSMAPCoeffs=False, extras=None, allowMissing=False,
-        missingDistance=0.0, dt=False, reldt=False, dtWeight=0.0,
-        numReps=1, panelWeight=0, panelWeights=None, verbosity=1,
-        showProgressBar=None, numThreads=1, lowMemory=False,
-        predictWithPast=False, saveInputs=""):
+
+def edm(
+    t,
+    x,
+    y=None,
+    *,
+    panel=None,
+    E=2,
+    tau=1,
+    theta=1.0,
+    library=None,
+    k=0,
+    algorithm="simplex",
+    p=None,
+    crossfold=0,
+    full=False,
+    shuffle=False,
+    copredict=None,
+    savePredictions=False,
+    saveCoPredictions=False,
+    saveManifolds=False,
+    saveSMAPCoeffs=False,
+    extras=None,
+    allowMissing=False,
+    missingDistance=0.0,
+    dt=False,
+    reldt=False,
+    dtWeight=0.0,
+    numReps=1,
+    panelWeight=0,
+    panelWeights=None,
+    verbosity=1,
+    showProgressBar=None,
+    numThreads=1,
+    lowMemory=False,
+    predictWithPast=False,
+    saveInputs="",
+):
     """
     This function provides access to the empirical dynamical modelling (EDM)
     routines (which are implemented efficiently in C++). The interface is quite
@@ -232,8 +261,8 @@ def edm(t, x, y = None, *, panel = None, E=2, tau=1, theta=1.0, library=None,
             of the time series to make a prediction.
 
     Returns: A list
-    
-    Example: 
+
+    Example:
         t = [1, 2, 3, 4, 5, 6, 7, 8]
         x = [11, 12, 13, 14, 15, 16, 17, 18]
         res = edm(t, x)
@@ -272,7 +301,7 @@ def edm(t, x, y = None, *, panel = None, E=2, tau=1, theta=1.0, library=None,
         shuffle = True
 
     if showProgressBar is None:
-        showProgressBar = (verbosity > 0)
+        showProgressBar = verbosity > 0
 
     explore = y is None
 
@@ -298,21 +327,42 @@ def edm(t, x, y = None, *, panel = None, E=2, tau=1, theta=1.0, library=None,
 
     panelWeight = -1 if panelWeight == float("inf") else panelWeight
 
-    res = run_command(t, x, y, copredict, panel,
-                      E, tau, theta, library,
-                      k, algorithm=algorithm, numReps=numReps,
-                      p=p, crossfold=crossfold, full=full, shuffle=shuffle,
-                      saveFinalPredictions=savePredictions,
-                      saveFinalCoPredictions=saveCoPredictions,
-                      saveManifolds=saveManifolds,
-                      saveSMAPCoeffs=saveSMAPCoeffs,
-                      extras=extras, allowMissing=allowMissing,
-                      missingDistance=missingDistance,
-                      dt=dt, reldt=reldt, dtWeight=dtWeight,
-                      numThreads=numThreads, panelWeight=panelWeight,
-                      panelWeights=panelWeights, verbosity=verbosity,
-                      showProgressBar=showProgressBar, lowMemory=lowMemory,
-                      predictWithPast=predictWithPast, saveInputs=saveInputs)
+    res = run_command(
+        t,
+        x,
+        y,
+        copredict,
+        panel,
+        E,
+        tau,
+        theta,
+        library,
+        k,
+        algorithm=algorithm,
+        numReps=numReps,
+        p=p,
+        crossfold=crossfold,
+        full=full,
+        shuffle=shuffle,
+        saveFinalPredictions=savePredictions,
+        saveFinalCoPredictions=saveCoPredictions,
+        saveManifolds=saveManifolds,
+        saveSMAPCoeffs=saveSMAPCoeffs,
+        extras=extras,
+        allowMissing=allowMissing,
+        missingDistance=missingDistance,
+        dt=dt,
+        reldt=reldt,
+        dtWeight=dtWeight,
+        numThreads=numThreads,
+        panelWeight=panelWeight,
+        panelWeights=panelWeights,
+        verbosity=verbosity,
+        showProgressBar=showProgressBar,
+        lowMemory=lowMemory,
+        predictWithPast=predictWithPast,
+        saveInputs=saveInputs,
+    )
 
     if res["rc"] == 0:
         if verbosity > 1:
@@ -325,7 +375,11 @@ def edm(t, x, y = None, *, panel = None, E=2, tau=1, theta=1.0, library=None,
             print(f"Number of non-missing stats: {df.shape[0]}")
 
         if df.shape[0] > 1:
-            res["summary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean().reset_index()
+            res["summary"] = (
+                df.groupby(["E", "library", "theta"])[["rho", "mae"]]
+                .mean()
+                .reset_index()
+            )
         else:
             res["summary"] = res["stats"]
 
@@ -337,15 +391,23 @@ def edm(t, x, y = None, *, panel = None, E=2, tau=1, theta=1.0, library=None,
                 if res["kMin"] == res["kMax"]:
                     print(f"Number of neighbours (k) is set to {res['kMin']}")
                 else:
-                    print("Number of neighbours (k) is set to between ",
-                        res["kMin"], " and ", res["kMax"])
+                    print(
+                        "Number of neighbours (k) is set to between ",
+                        res["kMin"],
+                        " and ",
+                        res["kMax"],
+                    )
 
         if copredict is not None:
             res["copredStats"] = pd.DataFrame(res["copredStats"])
             df = res["copredStats"].dropna()
 
             if df.shape[0] > 1:
-                res["copredSummary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean().reset_index()
+                res["copredSummary"] = (
+                    df.groupby(["E", "library", "theta"])[["rho", "mae"]]
+                    .mean()
+                    .reset_index()
+                )
             else:
                 res["copredSummary"] = res["copredStats"]
 

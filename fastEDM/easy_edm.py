@@ -10,9 +10,17 @@ from fastEDM import edm, EasyEDMSummary
 DEBUG = False
 
 
-def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
-             verbosity = 1, showProgressBar = None, normalize = True):
-    '''
+def easy_edm(
+    cause,
+    effect,
+    time=None,
+    data=None,
+    direction="oneway",
+    verbosity=1,
+    showProgressBar=None,
+    normalize=True,
+):
+    """
     This is an automated workflow for performing causal analysis on the
     supplied time series using empirical dynamical modelling (EDM) techniques.
     It is intended to hide all the common steps of an EDM analysis, and should
@@ -53,10 +61,12 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     result : str
         Strength of evidence for causation. Either 'Strong evidence', 'Some evidence',
         or 'No evidence'.
-    '''
+    """
 
-    print("While the 'edm' functionality is well-tested and ready for use, '"
-          "this 'easy_edm automated analysis is still a work-in-progress.")
+    print(
+        "While the 'edm' functionality is well-tested and ready for use, '"
+        "this 'easy_edm automated analysis is still a work-in-progress."
+    )
 
     # Development parameters, remove later!
     convergence_method = "quantile"
@@ -86,14 +96,17 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
         print("=== Testing for non-linearity using S-Map.")
 
     # Test for non-linearity using S-Map
-    optTheta, isNonLinear = test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps,
-                                              verbosity, showProgressBar, log)
+    optTheta, isNonLinear = test_nonlinearity(
+        t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, showProgressBar, log
+    )
 
     if verbosity > 1:
         print("=== Testing for delay effect of x on y.")
 
     # Lags the y (effect) time series by the optimal value or differences the series if it was linear
-    yOpt = get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear, optTheta, maxLag, log)
+    yOpt = get_optimal_effect(
+        t, x, y, E_best, verbosity, showProgressBar, isNonLinear, optTheta, maxLag, log
+    )
 
     if verbosity > 1:
         print("=== Finding maximum library size.")
@@ -107,11 +120,24 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
     # Test for causality using CCM
     if convergence_method == "parametric":
         # Perform cross-mapping (CCM)
-        result = test_convergence_monster(t, x, yOpt, E_best, libraryMax, optTheta, verbosity, showProgressBar, log)
+        result = test_convergence_monster(
+            t, x, yOpt, E_best, libraryMax, optTheta, verbosity, showProgressBar, log
+        )
     elif convergence_method == "hypothesis":
-        result = test_convergence_monster # Replace this later
+        result = test_convergence_monster  # Replace this later
     elif convergence_method == "quantile":
-        result = test_convergence_dist(t, x, yOpt, E_best, libraryMax, optTheta, verbosity, showProgressBar, 1000, log)
+        result = test_convergence_dist(
+            t,
+            x,
+            yOpt,
+            E_best,
+            libraryMax,
+            optTheta,
+            verbosity,
+            showProgressBar,
+            1000,
+            log,
+        )
     else:
         raise ValueError("Invalid convergence method selected")
 
@@ -130,7 +156,7 @@ def easy_edm(cause, effect, time = None, data = None, direction = "oneway",
 
 
 def preprocess_inputs(data, cause, effect, time, verbosity, normalize, log):
-    '''
+    """
     Convert time series to arrays (they can be supplied as columns of a dataframe).
     ------------------------------------------------------------------------------------------
     Parameters
@@ -160,7 +186,7 @@ def preprocess_inputs(data, cause, effect, time, verbosity, normalize, log):
         The causal time series.
     y : np.ndarray
         The effect time series.
-    '''
+    """
 
     givenTimeSeriesNames = data is not None
     if givenTimeSeriesNames:
@@ -187,11 +213,11 @@ def preprocess_inputs(data, cause, effect, time, verbosity, normalize, log):
         print("Time series are not the same len .")
         exit(1)
 
-    if (verbosity > 0):
+    if verbosity > 0:
         print(f"Number of observations is {len(t)}")
 
-    if (normalize):
-        if (verbosity > 0):
+    if normalize:
+        if verbosity > 0:
             print("Normalizing the supplied time series")
         # Skips NaN values when calculatin mean and std dev
         x = (x - np.nanmean(x)) / np.nanstd(x)
@@ -201,7 +227,7 @@ def preprocess_inputs(data, cause, effect, time, verbosity, normalize, log):
 
 
 def find_embedding_dimension(t, x, verbosity, showProgressBar, log):
-    '''
+    """
     Find optimal E (embedding dimension) of the causal variable using simplex projection
     ------------------------------------------------------------------------------------------
     Parameters
@@ -220,9 +246,11 @@ def find_embedding_dimension(t, x, verbosity, showProgressBar, log):
     ------------------------------------------------------------------------------------------
     E_best : int
         Optimal embedding dimension of the causal variable
-    '''
+    """
 
-    res = edm(t, x, E = list(range(3, 10 + 1)), verbosity = 0, showProgressBar = showProgressBar)
+    res = edm(
+        t, x, E=list(range(3, 10 + 1)), verbosity=0, showProgressBar=showProgressBar
+    )
 
     log.captureEmbeddingInfo(res["summary"])
 
@@ -237,14 +265,16 @@ def find_embedding_dimension(t, x, verbosity, showProgressBar, log):
     idx_max_rho = np.argmax(res["summary"]["rho"])
     E_best = int(res["summary"]["E"][idx_max_rho])
 
-    if (verbosity > 0):
+    if verbosity > 0:
         print(f"Found optimal embedding dimension E to be {E_best}.")
 
     return E_best
 
 
-def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, showProgressBar, log):
-    '''
+def test_nonlinearity(
+    t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, showProgressBar, log
+):
+    """
     Test for non-linearity using S-Map
     ------------------------------------------------------------------------------------------
     Parameters
@@ -273,29 +303,37 @@ def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity
     isNonLinear : bool
         Whether the system passes the nonlinearity test.
     ------------------------------------------------------------------------------------------
-    '''
+    """
 
     theta_values = np.linspace(0, max_theta, 1 + num_thetas)
 
     # Calculate predictive accuracy over theta 0 to 'max_theta'
-    res = edm(t, x, E = E_best, theta = theta_values, algorithm="smap", k=float("inf"),
-              verbosity = 0, showProgressBar = showProgressBar)
-    summary = res['summary']
+    res = edm(
+        t,
+        x,
+        E=E_best,
+        theta=theta_values,
+        algorithm="smap",
+        k=float("inf"),
+        verbosity=0,
+        showProgressBar=showProgressBar,
+    )
+    summary = res["summary"]
 
     log.captureThetaInfo(res["summary"])
 
-    if (DEBUG):
+    if DEBUG:
         print(f"Summary:\n{summary}")
 
     # Find optimal value of theta
-    optIndex = summary['rho'].idxmax()
-    optTheta = float(summary.iloc[optIndex]['theta'])
-    optRho   = round(summary.iloc[optIndex]['rho'], 5)
+    optIndex = summary["rho"].idxmax()
+    optTheta = float(summary.iloc[optIndex]["theta"])
+    optRho = round(summary.iloc[optIndex]["rho"], 5)
 
-    if (verbosity > 0):
+    if verbosity > 0:
         print(f"Found optimal theta to be {round(optTheta, 3)}, with rho = {optRho}.")
 
-    if (verbosity > 2):
+    if verbosity > 2:
         # Plot the rho-theta curve.
         plt.plot(summary["theta"], summary["rho"])
         plt.xlabel("theta")
@@ -304,33 +342,53 @@ def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity
         plt.show()
 
     # Kolmogorov-Smirnov test: optimal theta against theta = 0
-    resBase = edm(t, x, E = E_best, theta = 0, numReps = theta_reps, k=20, algorithm="smap",
-                  verbosity = 0, showProgressBar = showProgressBar)
-    resOpt  = edm(t, x, E = E_best, theta = optTheta, numReps = theta_reps, k=20, algorithm="smap",
-                  verbosity = 0, showProgressBar = showProgressBar)
+    resBase = edm(
+        t,
+        x,
+        E=E_best,
+        theta=0,
+        numReps=theta_reps,
+        k=20,
+        algorithm="smap",
+        verbosity=0,
+        showProgressBar=showProgressBar,
+    )
+    resOpt = edm(
+        t,
+        x,
+        E=E_best,
+        theta=optTheta,
+        numReps=theta_reps,
+        k=20,
+        algorithm="smap",
+        verbosity=0,
+        showProgressBar=showProgressBar,
+    )
 
-    sampleBase, sampleOpt = resBase['stats']['rho'], resOpt['stats']['rho']
+    sampleBase, sampleOpt = resBase["stats"]["rho"], resOpt["stats"]["rho"]
 
-    if (DEBUG):
+    if DEBUG:
         print(f"Theta=0:\n{resBase['stats']}")
         print(f"Theta>0:\n{resOpt['stats']}\n")
 
-    ksTest = ks_2samp(sampleOpt, sampleBase, alternative='less')
+    ksTest = ks_2samp(sampleOpt, sampleBase, alternative="less")
     ksStat, ksPVal = round(ksTest.statistic, 5), round(ksTest.pvalue, 5)
 
-    log.captureNonLinearTestInfo((resBase['summary'], resOpt['summary'], ksTest))
+    log.captureNonLinearTestInfo((resBase["summary"], resOpt["summary"], ksTest))
 
-    if (verbosity > 0):
-        print(f"Found Kolmogorov-Smirnov test statistic to be {ksStat} with p-value={ksPVal}.")
+    if verbosity > 0:
+        print(
+            f"Found Kolmogorov-Smirnov test statistic to be {ksStat} with p-value={ksPVal}."
+        )
 
     isNonLinear = ksPVal < 0.05
     return optTheta, isNonLinear
 
 
 def tslag(t, x, lag=1, dt=1):
-    '''
+    """
     Helper: Lags a given time series
-    '''
+    """
     t = np.asarray(t)
     x = np.asarray(x)
     l_x = np.full(len(t), np.nan)
@@ -342,8 +400,10 @@ def tslag(t, x, lag=1, dt=1):
     return l_x
 
 
-def get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear, theta, maxLag, log):
-    '''
+def get_optimal_effect(
+    t, x, y, E_best, verbosity, showProgressBar, isNonLinear, theta, maxLag, log
+):
+    """
     Find optimal lag for the y (effect) time series
     ------------------------------------------------------------------------------------------
     Parameters
@@ -374,52 +434,65 @@ def get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear,
         The modified effect time series. Either lagged by optimal lagging value or differenced
         if the time series does not pass the nonlinearity test.
     ------------------------------------------------------------------------------------------
-    '''
+    """
 
     rhos = {}
     for i in range(-maxLag, maxLag + 1):
-        res = edm(t, x, tslag(t, y, i), E = E_best, theta = theta,
-                  algorithm="simplex", k=float("inf"), verbosity = 0, showProgressBar = showProgressBar)
-        rhos[i] = float(res['summary']['rho'])
+        res = edm(
+            t,
+            x,
+            tslag(t, y, i),
+            E=E_best,
+            theta=theta,
+            algorithm="simplex",
+            k=float("inf"),
+            verbosity=0,
+            showProgressBar=showProgressBar,
+        )
+        rhos[i] = float(res["summary"]["rho"])
 
     log.captureLagInfo(rhos)
 
     optLag = max(rhos, key=rhos.get)
 
-    if (DEBUG):
+    if DEBUG:
         print("Lagged Rhos:")
         for k, v in rhos.items():
             print("Lag " + ("+" if k >= 0 else "") + str(k) + ": " + str(round(v, 5)))
 
-    if (verbosity > 0):
-        print(f'Found optimal lag to be {optLag} with rho={round(rhos[optLag], 5)}')
+    if verbosity > 0:
+        print(f"Found optimal lag to be {optLag} with rho={round(rhos[optLag], 5)}")
 
     # If retrocausality is spotted, default to best positive lag and print warning
     invalidLag = optLag < 0
     if invalidLag:
         validRhos = {k: v for k, v in rhos if k >= 0}
         optLag = max(validRhos, key=validRhos.get)
-        if (verbosity > 0):
-            print(f'This may indicate retrocausality, using alternate lag of {optLag} \
-                    with rho={round(rhos[optLag], 5)}')
+        if verbosity > 0:
+            print(
+                f"This may indicate retrocausality, using alternate lag of {optLag} \
+                    with rho={round(rhos[optLag], 5)}"
+            )
 
     yLag = tslag(t, y, optLag)
     if isNonLinear:
         # Transform y and data to match optimal lagged series
         yOpt = yLag
-        if (verbosity > 0):
+        if verbosity > 0:
             print(f"Lagging time series using optimal lag of {optLag}")
     else:
         # Difference y and data by optimal lagged series
         yOpt = y - yLag
         if verbosity > 0:
-            print(f'Differencing time series due to failed nonlinearity test (lag={optLag})')
+            print(
+                f"Differencing time series due to failed nonlinearity test (lag={optLag})"
+            )
 
     return yOpt
 
 
 def get_max_library(t, x, y, E_best, verbosity, showProgressBar, log):
-    '''
+    """
     Finds the maximum library size
     ------------------------------------------------------------------------------------------
     Parameters
@@ -443,20 +516,27 @@ def get_max_library(t, x, y, E_best, verbosity, showProgressBar, log):
     libraryMax : int
         Maximum library size
     ------------------------------------------------------------------------------------------
-    '''
+    """
 
-    res = edm(t, y, E = E_best, algorithm = "simplex",
-              full = True, saveManifolds = True,
-              verbosity = 0, showProgressBar = showProgressBar)
+    res = edm(
+        t,
+        y,
+        E=E_best,
+        algorithm="simplex",
+        full=True,
+        saveManifolds=True,
+        verbosity=0,
+        showProgressBar=showProgressBar,
+    )
     libraryMax = len(res["Ms"][0])
 
     if verbosity > 0:
-        print(f'Found maximum library size of {libraryMax}')
+        print(f"Found maximum library size of {libraryMax}")
     return libraryMax
 
 
 def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, log):
-    '''
+    """
     Perform convergent cross mapping, using the effect to predict the cause.
     ------------------------------------------------------------------------------------------
     Parameters
@@ -482,18 +562,25 @@ def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar
     ccm : EDM output
         EDM output for the convergent cross mapping using the effect to predict the cause.
     ------------------------------------------------------------------------------------------
-    '''
+    """
 
-    res = edm(t, y, E = E_best, algorithm = "simplex",
-              full = True, saveManifolds = True,
-              verbosity = 0, showProgressBar = showProgressBar)
+    res = edm(
+        t,
+        y,
+        E=E_best,
+        algorithm="simplex",
+        full=True,
+        saveManifolds=True,
+        verbosity=0,
+        showProgressBar=showProgressBar,
+    )
     libraryMax = len(res["Ms"][0])
 
-    if (verbosity > 0):
+    if verbosity > 0:
         print(f"The maximum library size we can use is {libraryMax}.")
 
     # Set up a grid of library sizes to run the cross-mapping over.
-    if (libraryMax >= 500):
+    if libraryMax >= 500:
         libraryStart = 100
     else:
         libraryStart = 10
@@ -502,15 +589,26 @@ def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar
     libraries = [math.ceil(libraryStart + step * k) for k in range(25)]
 
     # Next run the convergent cross-mapping (CCM), using the effect to predict the cause.
-    ccm = edm(t, y, x, E = E_best, library = libraries, theta = theta,
-                           algorithm = "simplex", k = np.inf, shuffle = True, verbosity = 0,
-                           showProgressBar = showProgressBar)
+    ccm = edm(
+        t,
+        y,
+        x,
+        E=E_best,
+        library=libraries,
+        theta=theta,
+        algorithm="simplex",
+        k=np.inf,
+        shuffle=True,
+        verbosity=0,
+        showProgressBar=showProgressBar,
+    )
     return ccm
 
 
-
-def test_convergence_monster(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, log):
-    '''
+def test_convergence_monster(
+    t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, log
+):
+    """
     Test for convergence using parametric test (Monster)
     ------------------------------------------------------------------------------------------
     Parameters
@@ -539,7 +637,7 @@ def test_convergence_monster(t, x, y, E_best, libraryMax, theta, verbosity, show
         Strength of evidence for causation. Either 'Strong evidence', 'Some evidence',
         or 'No evidence'.
     ------------------------------------------------------------------------------------------
-    '''
+    """
 
     # Make some rough guesses for the Monster exponential fit coefficients
     ccm = cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar)
@@ -555,48 +653,52 @@ def test_convergence_monster(t, x, y, E_best, libraryMax, theta, verbosity, show
     monsterFitStart = {
         "alpha": alphaGuess,
         "gamma": gammaGuess,
-        "rhoInfinity": rhoInfinityGuess
+        "rhoInfinity": rhoInfinityGuess,
     }
 
-    mArgs = ccmRes.filter(['alpha', 'gamma', 'library', 'rhoInfinity'])
+    mArgs = ccmRes.filter(["alpha", "gamma", "library", "rhoInfinity"])
+
     def mTarget(alpha, gamma, library, rhoInfinity):
         return alpha * np.exp(-gamma * library) + rhoInfinity
 
     try:
-        mFit = minimize(mTarget, initial_guess = monsterFitStart, args = mArgs)
+        mFit = minimize(mTarget, initial_guess=monsterFitStart, args=mArgs)
         monsterFit = {
             "alpha": mFit["alpha"],
             "gamma": mFit["gamma"],
-            "rhoInfinity": mFit["rhoInfinity"]
+            "rhoInfinity": mFit["rhoInfinity"],
         }
     except Exception as e:
-        if (verbosity > 0):
+        if verbosity > 0:
             print("Couldn't fit an exponential curve to the rho-L values.")
             print("This may be a sign that these EDM results are not very reliable.")
-        monsterFit = {
-            "alpha": None, "gamma": None, "rhoInfinity": finalRho
-        }
+        monsterFit = {"alpha": None, "gamma": None, "rhoInfinity": finalRho}
 
     if verbosity > 1:
         ccmAlpha = round(monsterFit["alpha"], 2)
         ccmGamma = round(monsterFit["gamma"], 2)
         ccmRho = round(monsterFit["rhoInfinity"], 2)
-        print(f"The CCM fit is (alpha, gamma, rhoInfinity) = ({ccmAlpha}, {ccmGamma}, {ccmRho}).")
-    elif (verbosity == 1):
+        print(
+            f"The CCM fit is (alpha, gamma, rhoInfinity) = ({ccmAlpha}, {ccmGamma}, {ccmRho})."
+        )
+    elif verbosity == 1:
         ccmRho = round(monsterFit["rhoInfinity"], 2)
         print(f"The CCM final rho was {ccmRho}")
 
-    if (monsterFit["rhoInfinity"] > 0.7):
+    if monsterFit["rhoInfinity"] > 0.7:
         causalSummary = "Strong evidence"
-    elif (monsterFit["rhoInfinity"] > 0.5):
+    elif monsterFit["rhoInfinity"] > 0.5:
         causalSummary = "Some evidence"
     else:
         causalSummary = "No evidence"
 
     return causalSummary
 
-def test_convergence_dist(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, numReps, log):
-    '''
+
+def test_convergence_dist(
+    t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, numReps, log
+):
+    """
     Test for convergence by comparing the distribution of rho at a small library size and
     a sampled rho at the maximum library size.
     ------------------------------------------------------------------------------------------
@@ -626,28 +728,53 @@ def test_convergence_dist(t, x, y, E_best, libraryMax, theta, verbosity, showPro
         Strength of evidence for causation. Either 'Strong evidence', 'Some evidence',
         or 'No evidence'.
     ------------------------------------------------------------------------------------------
-    '''
+    """
     librarySmall = max(E_best + 2, libraryMax // 10)
 
-    distRes = edm(t, y, x, E = E_best, library = librarySmall, numReps = numReps, theta = theta,
-                  algorithm = "simplex", k = np.inf, shuffle = True, verbosity = 0,
-                  showProgressBar = showProgressBar)
-    dist = distRes['stats']['rho']
+    distRes = edm(
+        t,
+        y,
+        x,
+        E=E_best,
+        library=librarySmall,
+        numReps=numReps,
+        theta=theta,
+        algorithm="simplex",
+        k=np.inf,
+        shuffle=True,
+        verbosity=0,
+        showProgressBar=showProgressBar,
+    )
+    dist = distRes["stats"]["rho"]
 
-    finalRes = edm(t, y, x, E = E_best, library = libraryMax, theta = theta,
-                algorithm = "simplex", k = np.inf, shuffle = True, verbosity = 0,
-                showProgressBar = showProgressBar)
+    finalRes = edm(
+        t,
+        y,
+        x,
+        E=E_best,
+        library=libraryMax,
+        theta=theta,
+        algorithm="simplex",
+        k=np.inf,
+        shuffle=True,
+        verbosity=0,
+        showProgressBar=showProgressBar,
+    )
     finalRho = float(finalRes["summary"]["rho"])
 
     q975, q95 = np.quantile(dist, 0.975), np.quantile(dist, 0.95)
-    rhoQuantile = np.count_nonzero(dist<finalRho) / dist.size
+    rhoQuantile = np.count_nonzero(dist < finalRho) / dist.size
     if verbosity >= 1:
-        print(f"At library=E+2, found rho quantiles of {round(q975, 5)} (0.975) and {round(q95, 5)} (0.95)")
-        print(f"At library=max, found final rho was {round(finalRho, 5)}, i.e. quantile={rhoQuantile}")
+        print(
+            f"At library=E+2, found rho quantiles of {round(q975, 5)} (0.975) and {round(q95, 5)} (0.95)"
+        )
+        print(
+            f"At library=max, found final rho was {round(finalRho, 5)}, i.e. quantile={rhoQuantile}"
+        )
 
-    if (finalRho > q975):
+    if finalRho > q975:
         causalSummary = "Strong evidence"
-    elif (finalRho > q95):
+    elif finalRho > q95:
         causalSummary = "Some evidence"
     else:
         causalSummary = "No evidence"
@@ -657,25 +784,28 @@ def test_convergence_dist(t, x, y, E_best, libraryMax, theta, verbosity, showPro
     return causalSummary
 
 
-
-class EasyEDMSummary():
+class EasyEDMSummary:
     ROW_LIMIT = 5
     WIDTH_LIMIT = 80
 
-    embedding_info   = None
-    theta_info       = None
-    nonlin_info      = None
-    lag_info         = None
-    conv_info        = None
+    embedding_info = None
+    theta_info = None
+    nonlin_info = None
+    lag_info = None
+    conv_info = None
 
     def captureEmbeddingInfo(self, data):
         self.embedding_info = data
+
     def captureThetaInfo(self, data):
         self.theta_info = data
+
     def captureNonLinearTestInfo(self, data):
         self.nonlin_info = data
+
     def captureLagInfo(self, data):
         self.lag_info = data
+
     def captureConvergenceInfo(self, data):
         self.conv_info = data
 
@@ -696,7 +826,7 @@ class EasyEDMSummary():
         # Get final width of table to format header section
         tableAsStr = str(table)
         index = 0
-        while tableAsStr[index] != '\n' and index < len(tableAsStr):
+        while tableAsStr[index] != "\n" and index < len(tableAsStr):
             index += 1
 
         print()
@@ -704,15 +834,16 @@ class EasyEDMSummary():
         print(paddedMessage)
         print(table)
 
-
     def printEmbeddingInfo(self):
         pt = PrettyTable()
-        pt.field_names = ['E', 'library', 'theta', 'rho', 'mae']
+        pt.field_names = ["E", "library", "theta", "rho", "mae"]
 
         sorted_info = self.embedding_info.sort_values(by=["rho"])
         for idx, row in sorted_info.iterrows():
             E, library, theta, rho, mae = row
-            pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5)))
+            pt.add_row(
+                (int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5))
+            )
             if idx > self.ROW_LIMIT:
                 break
 
@@ -720,12 +851,14 @@ class EasyEDMSummary():
 
     def printThetaInfo(self):
         pt = PrettyTable()
-        pt.field_names = ['E', 'library', 'theta', 'rho', 'mae']
+        pt.field_names = ["E", "library", "theta", "rho", "mae"]
 
         sorted_info = self.theta_info.sort_values(by=["rho"])
         for idx, row in sorted_info.iterrows():
             E, library, theta, rho, mae = row
-            pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5)))
+            pt.add_row(
+                (int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5))
+            )
             if idx > self.ROW_LIMIT:
                 break
 
@@ -736,21 +869,22 @@ class EasyEDMSummary():
 
         resBase, resOpt, ksTest = self.nonlin_info
 
-        thetaOpt = round(float(resOpt['theta']), 3)
-        rhoBase, rhoOpt = round(float(resBase['rho']), 3), round(float(resOpt['rho']), 3)
+        thetaOpt = round(float(resOpt["theta"]), 3)
+        rhoBase, rhoOpt = round(float(resBase["rho"]), 3), round(
+            float(resOpt["rho"]), 3
+        )
         ksStat, ksPVal = round(ksTest.statistic, 5), round(ksTest.pvalue, 5)
 
         pt.field_names = [
             "rho (theta=0)",
-           f"rho (theta={thetaOpt})",
+            f"rho (theta={thetaOpt})",
             "ks-stat",
-            "p-value"
+            "p-value",
         ]
 
         pt.add_row((rhoBase, rhoOpt, ksStat, ksPVal))
 
         self.printTable(pt, "Checking nonlinearity using Kolmogorov-Smirnov test")
-
 
     def printLagInfo(self):
         pt = PrettyTable()
@@ -768,12 +902,11 @@ class EasyEDMSummary():
 
         self.printTable(pt, "Finding optimal lag using smap")
 
-
     def printConvergenceInfo(self):
         pt = PrettyTable()
         type, dist, sample = self.conv_info
 
-        if type == 'quantile':
+        if type == "quantile":
             # pt = PrettyTable()
             # pt.field_names = ['E', 'library', 'theta', 'rho', 'mae']
             # sorted_info = dist.sort_values(by=["rho"])
@@ -787,13 +920,22 @@ class EasyEDMSummary():
             # self.printTable(pt, "Testing convergence: distrbution at a small library size")
 
             finalRho = float(sample["rho"])
-            rhoQuantile = np.count_nonzero(dist<finalRho) / dist.size
+            rhoQuantile = np.count_nonzero(dist < finalRho) / dist.size
 
             pt = PrettyTable()
-            pt.field_names = ['E', 'library', 'theta', 'rho', 'mae', 'quantile']
+            pt.field_names = ["E", "library", "theta", "rho", "mae", "quantile"]
             for idx, row in sample.iterrows():
                 E, library, theta, rho, mae = row
-                pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5), round(rhoQuantile, 5)))
+                pt.add_row(
+                    (
+                        int(E),
+                        int(library),
+                        round(theta, 5),
+                        round(rho, 5),
+                        round(mae, 5),
+                        round(rhoQuantile, 5),
+                    )
+                )
                 if idx > self.ROW_LIMIT:
                     break
 

@@ -88,7 +88,8 @@ def check_noisy_edm_result(res, rho_1, rho_2, co_rho_1=None, co_rho_2=None):
         assert np.all(
             (np.asarray(co_rho_1) <= meanCoRho) & (meanCoRho <= np.asarray(co_rho_2))
         )
-        
+
+
 # Some uniform rv's from Stata using the seed '12345678'
 UNIF_200 = [
     0.4032161652730771,
