@@ -32,6 +32,11 @@ class TestEasyEdm(unittest.TestCase):
         print("\n>>> Test 2")
         xCCMCausesY = easy_edm(x, y, verbosity=VERBOSITY)
         assert xCCMCausesY == "Strong evidence"
+
+        # Check that larger values of verbosity work.
+        print("\n>>> Test 3")
+        xCCMCausesY = easy_edm(x, y, verbosity=4)
+        assert xCCMCausesY == "Strong evidence"
         
     def test_chicago_dataset(self):
         url = "https://github.com/EDM-Developers/fastEDM-r/raw/main/vignettes/chicago.csv"
