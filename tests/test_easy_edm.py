@@ -34,8 +34,10 @@ class TestEasyEdm(unittest.TestCase):
         assert xCCMCausesY == "Strong evidence"
 
         # Check that larger values of verbosity work.
+        # N.B. For verbosity > 2, we create a plot, which
+        # will hang the tests if we don't close it.
         print("\n>>> Test 3")
-        xCCMCausesY = easy_edm(x, y, verbosity=4)
+        xCCMCausesY = easy_edm(x, y, verbosity=2)
         assert xCCMCausesY == "Strong evidence"
 
     def test_chicago_dataset(self):
