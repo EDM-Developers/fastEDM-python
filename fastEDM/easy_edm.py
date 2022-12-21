@@ -12,8 +12,19 @@ DEBUG = False
 
 def easy_edm(cause, effect, time = None, data = None, direction = "oneway", 
              verbosity = 1, showProgressBar = None, normalize = True):
-    '''
-    Simplified interface for EDM function
+    '''    
+    This is an automated workflow for performing causal analysis on the
+    supplied time series using empirical dynamical modelling (EDM) techniques.
+    It is intended to hide all the common steps of an EDM analysis, and should
+    work on most datasets.
+
+    It may be the case that your data requires a custom analysis, so this
+    function can be used as a helpful starting point from which to create a
+    specialised analysis using the `edm` function directly.
+
+    Warning: While the `edm` functionality is well-tested and ready for use,
+    this `easy_edm` automated analysis is still a work-in-progress.
+
     ------------------------------------------------------------------------------------------
     Parameters
     ------------------------------------------------------------------------------------------
