@@ -2,6 +2,18 @@ cmake_minimum_required(VERSION 3.4...3.18)
 project(_fastEDM)
 
 
+# Write compile_commands.json file (used by IDEs & static analysers)
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+
+# Compiler flags
+if(WIN32)
+  set(CMAKE_CXX_FLAGS_DEBUG "/MTd /W4 /permissive /ZI /fsanitize=address /bigobj")
+  set(CMAKE_CXX_FLAGS_RELEASE "/MT /Ox /fp:fast /external:anglebrackets /external:W0")
+else()
+  set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -fsanitize=address")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math")
+endif()
+
 set(COMMON_SRC src/common.cpp src/common.h
                src/cpu.cpp src/cpu.h
                src/distances.cpp src/distances.h
@@ -24,6 +36,9 @@ target_compile_definitions(_fastEDM
                            PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
 
 target_include_directories(_fastEDM PRIVATE src/vendor)
+
+target_compile_definitions(_fastEDM PRIVATE JSON)
+target_compile_definitions(_fastEDM PRIVATE NOMINMAX)
 
 set_target_properties(_fastEDM
 PROPERTIES

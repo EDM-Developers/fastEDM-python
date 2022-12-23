@@ -34,5 +34,7 @@ class TestPyBind(unittest.TestCase):
             )["rc"]
             == 0
         )
-        assert Path("inputs.json").exists()
-        assert Path("inputs.json").stat().st_size > 0
+        json = Path("inputs.json")
+        assert json.exists()
+        assert json.stat().st_size > 0
+        json.unlink(missing_ok=True)
