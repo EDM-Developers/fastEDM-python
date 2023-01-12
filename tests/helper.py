@@ -89,6 +89,17 @@ def check_noisy_edm_result(res, rho_1, rho_2, co_rho_1=None, co_rho_2=None):
             (np.asarray(co_rho_1) <= meanCoRho) & (meanCoRho <= np.asarray(co_rho_2))
         )
 
+def expand(matrix, predictionRows):
+    expanded = []
+    obsNum = 0
+    for use in predictionRows:
+        if use:
+            expanded.append(matrix[obsNum])
+            obsNum += 1
+        else:
+            expanded.append(np.full(matrix.shape[1:], np.NAN))
+    
+    return np.array(expanded)
 
 # Some uniform rv's from Stata using the seed '12345678'
 UNIF_200 = [

@@ -20,6 +20,7 @@ def edm(
     full=False,
     shuffle=False,
     copredict=None,
+    saveTargets=False,
     savePredictions=False,
     saveCoPredictions=False,
     saveManifolds=False,
@@ -142,6 +143,9 @@ def edm(
         copredict: This option specifies the variable used for coprediction.
             A second prediction is run for each configuration of $E$, library, etc., using the same library set
             but with a prediction set built from the lagged embedding of this variable.
+
+        saveTargets: This option allows you to save the edm targets
+            which could be useful for plotting and diagnosis.
 
         savePredictions: This option allows you to save the edm predictions
             which could be useful for plotting and diagnosis.
@@ -344,6 +348,7 @@ def edm(
         crossfold=crossfold,
         full=full,
         shuffle=shuffle,
+        saveFinalTargets=saveTargets,
         saveFinalPredictions=savePredictions,
         saveFinalCoPredictions=saveCoPredictions,
         saveManifolds=saveManifolds,

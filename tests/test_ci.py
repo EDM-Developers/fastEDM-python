@@ -97,7 +97,11 @@ class TestCI(unittest.TestCase):
         beta1 = res1["coeffs"]
         check_edm_results(res1, res2, 0.66867, 0.98487)
 
+        # No missing values in coefficients
+        assert np.sum(np.isnan(beta1)) == 0
+    
         # assert beta1_b2_rep1 != . if _n > 1
+        beta1 = expand(beta1, res1["predictionRows"])
         assert np.sum(np.isnan(beta1[0, :])) == beta1.shape[1]
         assert np.sum(np.isnan(beta1[1:])) == 0
 
@@ -106,7 +110,11 @@ class TestCI(unittest.TestCase):
         x2 = res["predictions"]
         check_edm_result(res, 0.94272)
 
+        # No missing values in predictions
+        assert sum(np.isnan(x2)) == 0
+
         # assert x2 != . if _n > 1
+        x2 = expand(x2, res["predictionRows"])
         assert np.isnan(x2[0])
         assert sum(np.isnan(x2[1:])) == 0
 
@@ -115,7 +123,11 @@ class TestCI(unittest.TestCase):
         teste = res["copredictions"]
         check_edm_result(res, 0.9989, co_rho=0.78002)
 
+        # No missing values in copredictions
+        assert np.sum(np.isnan(teste)) == 0
+
         # assert teste != . if _n > 1
+        teste = expand(teste, res["predictionRows"])
         assert np.isnan(teste[0])
         assert np.sum(np.isnan(teste[1:])) == 0
 
@@ -135,7 +147,11 @@ class TestCI(unittest.TestCase):
         testx = res["copredictions"]
         check_edm_result(res, 0.89554, co_rho=0.67401)
 
+        # No missing values in copredictions.
+        assert np.sum(np.isnan(testx)) == 0
+
         # assert testx != . if _n >= 3
+        testx = expand(testx, res["predictionRows"])
         assert np.sum(np.isnan(testx[:2])) == 2
         assert np.sum(np.isnan(testx[2:])) == 0
 
@@ -149,7 +165,11 @@ class TestCI(unittest.TestCase):
         testx2 = res["copredictions"]
         check_edm_result(res, 0.89554, co_rho=0.93837)
 
+        # No missing values in copredictions
+        assert np.sum(np.isnan(testx2)) == 0
+
         # assert testx2 != . if _n >= 3
+        testx2 = expand(testx2, res["predictionRows"])
         assert np.sum(np.isnan(testx2[:2])) == 2
         assert np.sum(np.isnan(testx2[2:])) == 0
 
@@ -158,7 +178,11 @@ class TestCI(unittest.TestCase):
         testx3 = res["copredictions"]
         check_edm_result(res, 0.37011, co_rho=0.9364)
 
+        # No missing values in copredictions.
+        assert np.sum(np.isnan(testx3)) == 0
+
         # assert testx3 != . if _n >= 3
+        testx3 = expand(testx3, res["predictionRows"])
         assert np.sum(np.isnan(testx3[:2])) == 2
         assert np.sum(np.isnan(testx3[2:])) == 0
 
