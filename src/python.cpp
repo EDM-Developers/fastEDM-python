@@ -132,9 +132,9 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
                      std::optional<std::vector<int>> panel = std::nullopt, std::vector<int> es = { 2 }, int tau = 1,
                      std::vector<double> thetas = { 1.0 }, std::optional<std::vector<int>> libs = std::nullopt,
                      int k = 0, std::string algorithm = "simplex", int numReps = 1, int p = 1, int crossfold = 0,
-                     bool full = false, bool shuffle = false, bool saveFinalTargets = false, bool saveFinalPredictions = false,
-                     bool saveFinalCoPredictions = false, bool saveManifolds = false, bool saveSMAPCoeffs = false,
-                     bool dt = false, bool reldt = false, double dtWeight = 0.0,
+                     bool full = false, bool shuffle = false, bool saveFinalTargets = false,
+                     bool saveFinalPredictions = false, bool saveFinalCoPredictions = false, bool saveManifolds = false,
+                     bool saveSMAPCoeffs = false, bool dt = false, bool reldt = false, double dtWeight = 0.0,
                      std::optional<std::vector<std::vector<double>>> extras = std::nullopt, bool allowMissing = false,
                      double missingDistance = 0.0, double panelWeight = 0.0,
                      std::optional<Eigen::MatrixXd> panelWeights = std::nullopt, int verbosity = 1,
@@ -336,9 +336,10 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
     auto genPtr = std::shared_ptr<ManifoldGenerator>(&generator, [](ManifoldGenerator*) {});
 
 #ifndef PYODIDE
-    std::vector<std::future<PredictionResult>> futures = launch_tasks(
-      genPtr, opts, Es, libraries, k, numReps, crossfold, explore, full, shuffle, saveFinalTargets, saveFinalPredictions,
-      saveFinalCoPredictions, saveSMAPCoeffs, copredictMode, usable, rngState, &io, rcpp_keep_going, nullptr);
+    std::vector<std::future<PredictionResult>> futures =
+      launch_tasks(genPtr, opts, Es, libraries, k, numReps, crossfold, explore, full, shuffle, saveFinalTargets,
+                   saveFinalPredictions, saveFinalCoPredictions, saveSMAPCoeffs, copredictMode, usable, rngState, &io,
+                   rcpp_keep_going, nullptr);
 
     int numTasks = futures.size();
 
@@ -347,9 +348,10 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
       io.flush();
     }
 #else
-    std::vector<PredictionResult> results = run_tasks(
-      genPtr, opts, Es, libraries, k, numReps, crossfold, explore, full, shuffle, saveFinalTargets, saveFinalPredictions,
-      saveFinalCoPredictions, saveSMAPCoeffs, copredictMode, usable, rngState, &io, rcpp_keep_going, nullptr);
+    std::vector<PredictionResult> results =
+      run_tasks(genPtr, opts, Es, libraries, k, numReps, crossfold, explore, full, shuffle, saveFinalTargets,
+                saveFinalPredictions, saveFinalCoPredictions, saveSMAPCoeffs, copredictMode, usable, rngState, &io,
+                rcpp_keep_going, nullptr);
 
     int numTasks = results.size();
 #endif
@@ -399,7 +401,7 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
 #ifndef PYODIDE
         const PredictionResult pred = futures[task].get();
 #else
-        const PredictionResult & pred = results[task];
+        const PredictionResult& pred = results[task];
 #endif
 
         if (showProgressBar) {
@@ -436,17 +438,14 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
         }
 
         if (pred.targets != nullptr) {
-            targets =
-              to_eigen(pred.targets.get(), pred.numPredictions, 1);
+          targets = to_eigen(pred.targets.get(), pred.numPredictions, 1);
         }
 
         if (pred.predictions != nullptr) {
           if (!pred.copredict) {
-            predictions =
-              to_eigen(pred.predictions.get(), pred.numPredictions, pred.numThetas);
+            predictions = to_eigen(pred.predictions.get(), pred.numPredictions, pred.numThetas);
           } else {
-            coPredictions =
-              to_eigen(pred.predictions.get(), pred.numPredictions, pred.numThetas);
+            coPredictions = to_eigen(pred.predictions.get(), pred.numPredictions, pred.numThetas);
           }
         }
         if (pred.coeffs != nullptr) {
@@ -488,7 +487,7 @@ py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional
     }
 
     if (saveFinalTargets) {
-        res["targets"] = targets;
+      res["targets"] = targets;
     }
 
     if (saveFinalPredictions) {
@@ -546,12 +545,12 @@ PYBIND11_MODULE(_fastEDM, m)
   m.def("run_command", run_command, py::arg("t"), py::arg("x"), "y"_a = std::nullopt, "copredict_x"_a = std::nullopt,
         "panel"_a = std::nullopt, "es"_a = std::vector<int>({ 2 }), "tau"_a = 1,
         "thetas"_a = std::vector<double>({ 1.0 }), "libs"_a = std::nullopt, "k"_a = 0, "algorithm"_a = "simplex",
-        "numReps"_a = 1, "p"_a = 1, "crossfold"_a = 0, "full"_a = false, "shuffle"_a = false, "saveFinalTargets"_a = false,
-        "saveFinalPredictions"_a = false, "saveFinalCoPredictions"_a = false, "saveManifolds"_a = false,
-        "saveSMAPCoeffs"_a = false, "dt"_a = false, "reldt"_a = false, "dtWeight"_a = 0.0, "extras"_a = std::nullopt,
-        "allowMissing"_a = false, "missingDistance"_a = 0.0, "panelWeight"_a = 0.0, "panelWeights"_a = std::nullopt,
-        "verbosity"_a = 1, "showProgressBar"_a = true, "numThreads"_a = 1, "lowMemory"_a = false,
-        "predictWithPast"_a = false, "saveInputs"_a = "",
+        "numReps"_a = 1, "p"_a = 1, "crossfold"_a = 0, "full"_a = false, "shuffle"_a = false,
+        "saveFinalTargets"_a = false, "saveFinalPredictions"_a = false, "saveFinalCoPredictions"_a = false,
+        "saveManifolds"_a = false, "saveSMAPCoeffs"_a = false, "dt"_a = false, "reldt"_a = false, "dtWeight"_a = 0.0,
+        "extras"_a = std::nullopt, "allowMissing"_a = false, "missingDistance"_a = 0.0, "panelWeight"_a = 0.0,
+        "panelWeights"_a = std::nullopt, "verbosity"_a = 1, "showProgressBar"_a = true, "numThreads"_a = 1,
+        "lowMemory"_a = false, "predictWithPast"_a = false, "saveInputs"_a = "",
         R"pbdoc(
         Run an EDM command
         A really long description...

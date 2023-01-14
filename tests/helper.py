@@ -47,11 +47,7 @@ def expect_approx_equal(x, y):
     x = np.asarray(x).reshape(-1)
     y = np.asarray(y).reshape(-1)
 
-    validInputs = (
-        len(x) == len(y)
-        and len(x) == np.sum(np.isfinite(x))
-        and len(y) == np.sum(np.isfinite(y))
-    )
+    validInputs = len(x) == len(y) and len(x) == np.sum(np.isfinite(x)) and len(y) == np.sum(np.isfinite(y))
 
     assert validInputs
 
@@ -85,9 +81,8 @@ def check_noisy_edm_result(res, rho_1, rho_2, co_rho_1=None, co_rho_2=None):
         df = res["copredStats"].dropna()
         meanCoRho = df.groupby(["E", "library", "theta"])[["rho"]].mean()
         meanCoRho = np.asarray(meanCoRho).flatten()
-        assert np.all(
-            (np.asarray(co_rho_1) <= meanCoRho) & (meanCoRho <= np.asarray(co_rho_2))
-        )
+        assert np.all((np.asarray(co_rho_1) <= meanCoRho) & (meanCoRho <= np.asarray(co_rho_2)))
+
 
 def expand(matrix, predictionRows):
     expanded = []
@@ -98,8 +93,9 @@ def expand(matrix, predictionRows):
             obsNum += 1
         else:
             expanded.append(np.full(matrix.shape[1:], np.NAN))
-    
+
     return np.array(expanded)
+
 
 # Some uniform rv's from Stata using the seed '12345678'
 UNIF_200 = [

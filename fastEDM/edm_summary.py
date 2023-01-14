@@ -59,9 +59,7 @@ class EasyEDMSummary:
         sorted_info = self.embedding_info.sort_values(by=["rho"])
         for idx, row in sorted_info.iterrows():
             E, library, theta, rho, mae = row
-            pt.add_row(
-                (int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5))
-            )
+            pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5)))
             if idx > self.ROW_LIMIT:
                 break
 
@@ -74,9 +72,7 @@ class EasyEDMSummary:
         sorted_info = self.theta_info.sort_values(by=["rho"])
         for idx, row in sorted_info.iterrows():
             E, library, theta, rho, mae = row
-            pt.add_row(
-                (int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5))
-            )
+            pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5)))
             if idx > self.ROW_LIMIT:
                 break
 
@@ -88,17 +84,10 @@ class EasyEDMSummary:
         resBase, resOpt, ksTest = self.nonlin_info
 
         thetaOpt = round(float(resOpt["theta"]), 3)
-        rhoBase, rhoOpt = round(float(resBase["rho"]), 3), round(
-            float(resOpt["rho"]), 3
-        )
+        rhoBase, rhoOpt = round(float(resBase["rho"]), 3), round(float(resOpt["rho"]), 3)
         ksStat, ksPVal = round(ksTest.statistic, 5), round(ksTest.pvalue, 5)
 
-        pt.field_names = [
-            "rho (theta=0)",
-            f"rho (theta={thetaOpt})",
-            "ks-stat",
-            "p-value",
-        ]
+        pt.field_names = ["rho (theta=0)", f"rho (theta={thetaOpt})", "ks-stat", "p-value"]
 
         pt.add_row((rhoBase, rhoOpt, ksStat, ksPVal))
 
@@ -144,16 +133,7 @@ class EasyEDMSummary:
             pt.field_names = ["E", "library", "theta", "rho", "mae", "quantile"]
             for idx, row in sample.iterrows():
                 E, library, theta, rho, mae = row
-                pt.add_row(
-                    (
-                        int(E),
-                        int(library),
-                        round(theta, 5),
-                        round(rho, 5),
-                        round(mae, 5),
-                        round(rhoQuantile, 5),
-                    )
-                )
+                pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5), round(rhoQuantile, 5)))
                 if idx > self.ROW_LIMIT:
                     break
 

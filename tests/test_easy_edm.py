@@ -41,32 +41,22 @@ class TestEasyEdm(unittest.TestCase):
         assert xCCMCausesY == "Strong evidence"
 
     def test_chicago_dataset(self):
-        url = (
-            "https://github.com/EDM-Developers/fastEDM-r/raw/main/vignettes/chicago.csv"
-        )
+        url = "https://github.com/EDM-Developers/fastEDM-r/raw/main/vignettes/chicago.csv"
         chicago = pd.read_csv(url)
 
         print("\n>>> Test 1")
-        crimeCCMCausesTemp = easy_edm(
-            "Crime", "Temperature", data=chicago, verbosity=VERBOSITY
-        )
+        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data=chicago, verbosity=VERBOSITY)
         assert crimeCCMCausesTemp == "No evidence"
 
         print("\n>>> Test 2")
-        tempCCMCausesCrime = easy_edm(
-            "Temperature", "Crime", data=chicago, verbosity=VERBOSITY
-        )
+        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data=chicago, verbosity=VERBOSITY)
         assert tempCCMCausesCrime != "No evidence"
 
         # Check that the results still hold up if we don't normalize the inputs
         print("\n>>> Test 3")
-        crimeCCMCausesTemp = easy_edm(
-            "Crime", "Temperature", data=chicago, normalize=False, verbosity=VERBOSITY
-        )
+        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data=chicago, normalize=False, verbosity=VERBOSITY)
         assert crimeCCMCausesTemp == "No evidence"
 
         print("\n>>> Test 4")
-        tempCCMCausesCrime = easy_edm(
-            "Temperature", "Crime", data=chicago, normalize=False, verbosity=VERBOSITY
-        )
+        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data=chicago, normalize=False, verbosity=VERBOSITY)
         assert tempCCMCausesCrime != "No evidence"

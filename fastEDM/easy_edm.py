@@ -11,14 +11,7 @@ DEBUG = False
 
 
 def easy_edm(
-    cause,
-    effect,
-    time=None,
-    data=None,
-    direction="oneway",
-    verbosity=1,
-    showProgressBar=None,
-    normalize=True,
+    cause, effect, time=None, data=None, direction="oneway", verbosity=1, showProgressBar=None, normalize=True
 ):
     """
     This is an automated workflow for performing causal analysis on the
@@ -104,9 +97,7 @@ def easy_edm(
         print("=== Testing for delay effect of x on y.")
 
     # Lags the y (effect) time series by the optimal value or differences the series if it was linear
-    yOpt = get_optimal_effect(
-        t, x, y, E_best, verbosity, showProgressBar, isNonLinear, optTheta, maxLag, log
-    )
+    yOpt = get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear, optTheta, maxLag, log)
 
     if verbosity > 1:
         print("=== Finding maximum library size.")
@@ -120,24 +111,11 @@ def easy_edm(
     # Test for causality using CCM
     if convergence_method == "parametric":
         # Perform cross-mapping (CCM)
-        result = test_convergence_monster(
-            t, x, yOpt, E_best, libraryMax, optTheta, verbosity, showProgressBar, log
-        )
+        result = test_convergence_monster(t, x, yOpt, E_best, libraryMax, optTheta, verbosity, showProgressBar, log)
     elif convergence_method == "hypothesis":
         result = test_convergence_monster  # Replace this later
     elif convergence_method == "quantile":
-        result = test_convergence_dist(
-            t,
-            x,
-            yOpt,
-            E_best,
-            libraryMax,
-            optTheta,
-            verbosity,
-            showProgressBar,
-            1000,
-            log,
-        )
+        result = test_convergence_dist(t, x, yOpt, E_best, libraryMax, optTheta, verbosity, showProgressBar, 1000, log)
     else:
         raise ValueError("Invalid convergence method selected")
 
@@ -248,9 +226,7 @@ def find_embedding_dimension(t, x, verbosity, showProgressBar, log):
         Optimal embedding dimension of the causal variable
     """
 
-    res = edm(
-        t, x, E=list(range(3, 10 + 1)), verbosity=0, showProgressBar=showProgressBar
-    )
+    res = edm(t, x, E=list(range(3, 10 + 1)), verbosity=0, showProgressBar=showProgressBar)
 
     log.captureEmbeddingInfo(res["summary"])
 
@@ -271,9 +247,7 @@ def find_embedding_dimension(t, x, verbosity, showProgressBar, log):
     return E_best
 
 
-def test_nonlinearity(
-    t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, showProgressBar, log
-):
+def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, showProgressBar, log):
     """
     Test for non-linearity using S-Map
     ------------------------------------------------------------------------------------------
@@ -377,9 +351,7 @@ def test_nonlinearity(
     log.captureNonLinearTestInfo((resBase["summary"], resOpt["summary"], ksTest))
 
     if verbosity > 0:
-        print(
-            f"Found Kolmogorov-Smirnov test statistic to be {ksStat} with p-value={ksPVal}."
-        )
+        print(f"Found Kolmogorov-Smirnov test statistic to be {ksStat} with p-value={ksPVal}.")
 
     isNonLinear = ksPVal < 0.05
     return optTheta, isNonLinear
@@ -400,9 +372,7 @@ def tslag(t, x, lag=1, dt=1):
     return l_x
 
 
-def get_optimal_effect(
-    t, x, y, E_best, verbosity, showProgressBar, isNonLinear, theta, maxLag, log
-):
+def get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear, theta, maxLag, log):
     """
     Find optimal lag for the y (effect) time series
     ------------------------------------------------------------------------------------------
@@ -484,9 +454,7 @@ def get_optimal_effect(
         # Difference y and data by optimal lagged series
         yOpt = y - yLag
         if verbosity > 0:
-            print(
-                f"Differencing time series due to failed nonlinearity test (lag={optLag})"
-            )
+            print(f"Differencing time series due to failed nonlinearity test (lag={optLag})")
 
     return yOpt
 
@@ -519,14 +487,7 @@ def get_max_library(t, x, y, E_best, verbosity, showProgressBar, log):
     """
 
     res = edm(
-        t,
-        y,
-        E=E_best,
-        algorithm="simplex",
-        full=True,
-        saveManifolds=True,
-        verbosity=0,
-        showProgressBar=showProgressBar,
+        t, y, E=E_best, algorithm="simplex", full=True, saveManifolds=True, verbosity=0, showProgressBar=showProgressBar
     )
     libraryMax = len(res["Ms"][0])
 
@@ -565,14 +526,7 @@ def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar
     """
 
     res = edm(
-        t,
-        y,
-        E=E_best,
-        algorithm="simplex",
-        full=True,
-        saveManifolds=True,
-        verbosity=0,
-        showProgressBar=showProgressBar,
+        t, y, E=E_best, algorithm="simplex", full=True, saveManifolds=True, verbosity=0, showProgressBar=showProgressBar
     )
     libraryMax = len(res["Ms"][0])
 
@@ -605,9 +559,7 @@ def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar
     return ccm
 
 
-def test_convergence_monster(
-    t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, log
-):
+def test_convergence_monster(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, log):
     """
     Test for convergence using parametric test (Monster)
     ------------------------------------------------------------------------------------------
@@ -650,11 +602,7 @@ def test_convergence_monster(
     rhoInfinityGuess = finalRho
     alphaGuess = (firstRho - rhoInfinityGuess) / math.exp(-gammaGuess * firstLibrary)
 
-    monsterFitStart = {
-        "alpha": alphaGuess,
-        "gamma": gammaGuess,
-        "rhoInfinity": rhoInfinityGuess,
-    }
+    monsterFitStart = {"alpha": alphaGuess, "gamma": gammaGuess, "rhoInfinity": rhoInfinityGuess}
 
     mArgs = ccmRes.filter(["alpha", "gamma", "library", "rhoInfinity"])
 
@@ -663,11 +611,7 @@ def test_convergence_monster(
 
     try:
         mFit = minimize(mTarget, initial_guess=monsterFitStart, args=mArgs)
-        monsterFit = {
-            "alpha": mFit["alpha"],
-            "gamma": mFit["gamma"],
-            "rhoInfinity": mFit["rhoInfinity"],
-        }
+        monsterFit = {"alpha": mFit["alpha"], "gamma": mFit["gamma"], "rhoInfinity": mFit["rhoInfinity"]}
     except Exception as e:
         if verbosity > 0:
             print("Couldn't fit an exponential curve to the rho-L values.")
@@ -678,9 +622,7 @@ def test_convergence_monster(
         ccmAlpha = round(monsterFit["alpha"], 2)
         ccmGamma = round(monsterFit["gamma"], 2)
         ccmRho = round(monsterFit["rhoInfinity"], 2)
-        print(
-            f"The CCM fit is (alpha, gamma, rhoInfinity) = ({ccmAlpha}, {ccmGamma}, {ccmRho})."
-        )
+        print(f"The CCM fit is (alpha, gamma, rhoInfinity) = ({ccmAlpha}, {ccmGamma}, {ccmRho}).")
     elif verbosity == 1:
         ccmRho = round(monsterFit["rhoInfinity"], 2)
         print(f"The CCM final rho was {ccmRho}")
@@ -695,9 +637,7 @@ def test_convergence_monster(
     return causalSummary
 
 
-def test_convergence_dist(
-    t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, numReps, log
-):
+def test_convergence_dist(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, numReps, log):
     """
     Test for convergence by comparing the distribution of rho at a small library size and
     a sampled rho at the maximum library size.
@@ -765,12 +705,8 @@ def test_convergence_dist(
     q975, q95 = np.quantile(dist, 0.975), np.quantile(dist, 0.95)
     rhoQuantile = np.count_nonzero(dist < finalRho) / dist.size
     if verbosity >= 1:
-        print(
-            f"At library=E+2, found rho quantiles of {round(q975, 5)} (0.975) and {round(q95, 5)} (0.95)"
-        )
-        print(
-            f"At library=max, found final rho was {round(finalRho, 5)}, i.e. quantile={rhoQuantile}"
-        )
+        print(f"At library=E+2, found rho quantiles of {round(q975, 5)} (0.975) and {round(q95, 5)} (0.95)")
+        print(f"At library=max, found final rho was {round(finalRho, 5)}, i.e. quantile={rhoQuantile}")
 
     if finalRho > q975:
         causalSummary = "Strong evidence"

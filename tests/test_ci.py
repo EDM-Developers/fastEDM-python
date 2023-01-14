@@ -57,19 +57,7 @@ class TestCI(unittest.TestCase):
 
         # explore x, e(2/10)
         res = edm(t, x, E=range(2, 10 + 1))
-        rho = np.array(
-            [
-                0.99893,
-                0.99879,
-                0.99835,
-                0.99763,
-                0.99457,
-                0.99385,
-                0.991,
-                0.98972,
-                0.98572,
-            ]
-        )
+        rho = np.array([0.99893, 0.99879, 0.99835, 0.99763, 0.99457, 0.99385, 0.991, 0.98972, 0.98572])
         check_edm_result(res, rho)
 
         # edm xmap x y, k(5)
@@ -99,7 +87,7 @@ class TestCI(unittest.TestCase):
 
         # No missing values in coefficients
         assert np.sum(np.isnan(beta1)) == 0
-    
+
         # assert beta1_b2_rep1 != . if _n > 1
         beta1 = expand(beta1, res1["predictionRows"])
         assert np.sum(np.isnan(beta1[0, :])) == beta1.shape[1]
@@ -132,9 +120,7 @@ class TestCI(unittest.TestCase):
         assert np.sum(np.isnan(teste[1:])) == 0
 
         # edm explore z.x, p(10)
-        z_x = (x - np.nanmean(x)) / np.nanstd(
-            x
-        )  # This is slightly different to Stata ('touse' perhaps)
+        z_x = (x - np.nanmean(x)) / np.nanstd(x)  # This is slightly different to Stata ('touse' perhaps)
         res = edm(t, z_x, p=10)
         check_edm_result(res, 0.90235)
 
@@ -272,39 +258,12 @@ class TestCI(unittest.TestCase):
         check_edm_results(res1, res2, 0.99983, 0.99864)
 
         # edm xmap x l.x, extraembed(u) dt alg(smap) savesmap(newb) e(5)
-        res1 = edm(
-            t,
-            x,
-            tslag(t, x),
-            extras=[u],
-            dt=True,
-            algorithm="smap",
-            saveSMAPCoeffs=True,
-            E=5,
-        )
-        res2 = edm(
-            t,
-            tslag(t, x),
-            x,
-            extras=[u],
-            dt=True,
-            algorithm="smap",
-            saveSMAPCoeffs=True,
-            E=5,
-        )
+        res1 = edm(t, x, tslag(t, x), extras=[u], dt=True, algorithm="smap", saveSMAPCoeffs=True, E=5)
+        res2 = edm(t, tslag(t, x), x, extras=[u], dt=True, algorithm="smap", saveSMAPCoeffs=True, E=5)
         check_edm_results(res1, res2, 1.0, 0.77523)
 
         # edm xmap x l3.x, extraembed(u) dt alg(smap) savesmap(newc) e(5) oneway dtsave(testdt)
-        res = edm(
-            t,
-            x,
-            tslag(t, x, 3),
-            extras=[u],
-            dt=True,
-            algorithm="smap",
-            saveSMAPCoeffs=True,
-            E=5,
-        )
+        res = edm(t, x, tslag(t, x, 3), extras=[u], dt=True, algorithm="smap", saveSMAPCoeffs=True, E=5)
         check_edm_result(res, 0.36976)
 
         # edm explore x, extraembed(u) allowmissing dt crossfold(5)
@@ -527,12 +486,8 @@ class TestCI(unittest.TestCase):
         check_edm_results(res1, res2, 0.76444, 0.83836)
 
         # edm xmap x y, e(40) idw(-1) allowmissing
-        res1 = edm(
-            t, x, y, panel=panel, E=40, panelWeight=float("inf"), allowMissing=True
-        )
-        res2 = edm(
-            t, y, x, panel=panel, E=40, panelWeight=float("inf"), allowMissing=True
-        )
+        res1 = edm(t, x, y, panel=panel, E=40, panelWeight=float("inf"), allowMissing=True)
+        res2 = edm(t, y, x, panel=panel, E=40, panelWeight=float("inf"), allowMissing=True)
         check_edm_results(res1, res2, 0.55937, 0.75815)
 
     def test_panel_data_with_missing_observations(self):
@@ -584,15 +539,7 @@ class TestCI(unittest.TestCase):
         check_edm_result(res, 0.78473)
 
         # edm explore x, e(5) idw(-1) reldt allowmissing
-        res = edm(
-            t,
-            x,
-            panel=panel,
-            E=5,
-            panelWeight=float("inf"),
-            reldt=True,
-            allowMissing=True,
-        )
+        res = edm(t, x, panel=panel, E=5, panelWeight=float("inf"), reldt=True, allowMissing=True)
         check_edm_result(res, 0.75709)
 
     def test_bad_inputs(self):

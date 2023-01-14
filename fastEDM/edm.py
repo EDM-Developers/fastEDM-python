@@ -380,11 +380,7 @@ def edm(
             print(f"Number of non-missing stats: {df.shape[0]}")
 
         if df.shape[0] > 1:
-            res["summary"] = (
-                df.groupby(["E", "library", "theta"])[["rho", "mae"]]
-                .mean()
-                .reset_index()
-            )
+            res["summary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean().reset_index()
         else:
             res["summary"] = res["stats"]
 
@@ -396,23 +392,14 @@ def edm(
                 if res["kMin"] == res["kMax"]:
                     print(f"Number of neighbours (k) is set to {res['kMin']}")
                 else:
-                    print(
-                        "Number of neighbours (k) is set to between ",
-                        res["kMin"],
-                        " and ",
-                        res["kMax"],
-                    )
+                    print("Number of neighbours (k) is set to between ", res["kMin"], " and ", res["kMax"])
 
         if copredict is not None:
             res["copredStats"] = pd.DataFrame(res["copredStats"])
             df = res["copredStats"].dropna()
 
             if df.shape[0] > 1:
-                res["copredSummary"] = (
-                    df.groupby(["E", "library", "theta"])[["rho", "mae"]]
-                    .mean()
-                    .reset_index()
-                )
+                res["copredSummary"] = df.groupby(["E", "library", "theta"])[["rho", "mae"]].mean().reset_index()
             else:
                 res["copredSummary"] = res["copredStats"]
 
