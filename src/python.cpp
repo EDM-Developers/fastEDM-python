@@ -93,11 +93,11 @@ Eigen::MatrixXd to_eigen(const double* v, int r, int c, bool rowMajor = false)
   return mat;
 }
 
-Eigen::MatrixXd create_manifold(std::vector<double> t, std::vector<double> x,
-                                std::optional<std::vector<std::vector<double>>> extras = std::nullopt,
-                                std::optional<std::vector<int>> panel = std::nullopt, int E = 2, int tau = 1,
-                                bool allowMissing = false, int p = 1, bool full = false, bool dt = false,
-                                bool reldt = false, double dtWeight = 0.0, double panelWeight = 0.0)
+Manifold _construct_manifold(std::vector<double> t, std::vector<double> x,
+                             std::optional<std::vector<std::vector<double>>> extras = std::nullopt,
+                             std::optional<std::vector<int>> panel = std::nullopt, int E = 2, int tau = 1,
+                             bool allowMissing = false, int p = 1, bool full = false, bool dt = false,
+                             bool reldt = false, double dtWeight = 0.0, double panelWeight = 0.0)
 {
 
   std::vector<std::vector<double>> extrasVecs;
@@ -121,10 +121,28 @@ Eigen::MatrixXd create_manifold(std::vector<double> t, std::vector<double> x,
   ManifoldGenerator generator(t, x, tau, p, {}, {}, panelIDs, extrasVecs, numExtrasLagged, dt, reldt, allowMissing,
                               dtWeight);
 
-  std::vector<bool> usable = generator.generate_usable(E);
+  return Manifold(generator, E, generator.generate_usable(E), false, false, false);
+}
 
-  Manifold M(generator, E, usable, false, false, false);
+Eigen::MatrixXd create_manifold(std::vector<double> t, std::vector<double> x,
+                                std::optional<std::vector<std::vector<double>>> extras = std::nullopt,
+                                std::optional<std::vector<int>> panel = std::nullopt, int E = 2, int tau = 1,
+                                bool allowMissing = false, int p = 1, bool full = false, bool dt = false,
+                                bool reldt = false, double dtWeight = 0.0, double panelWeight = 0.0)
+{
+  auto M = _construct_manifold(t, x, extras, panel, E, tau, allowMissing, p, full, dt, reldt, dtWeight, panelWeight);
   return to_eigen(M.data(), M.numPoints(), M.E_actual(), true);
+}
+
+// Create a method which returns a python tuple of the manifold and the targets vector
+py::tuple create_manifold_and_targets(std::vector<double> t, std::vector<double> x,
+                                      std::optional<std::vector<std::vector<double>>> extras = std::nullopt,
+                                      std::optional<std::vector<int>> panel = std::nullopt, int E = 2, int tau = 1,
+                                      bool allowMissing = false, int p = 1, bool full = false, bool dt = false,
+                                      bool reldt = false, double dtWeight = 0.0, double panelWeight = 0.0)
+{
+  auto M = _construct_manifold(t, x, extras, panel, E, tau, allowMissing, p, full, dt, reldt, dtWeight, panelWeight);
+  return py::make_tuple(to_eigen(M.data(), M.numPoints(), M.E_actual(), true), M.targetsMap());
 }
 
 py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional<std::vector<double>> y = std::nullopt,
@@ -561,6 +579,13 @@ PYBIND11_MODULE(_fastEDM, m)
         "dt"_a = false, "reldt"_a = false, "dtWeight"_a = 0.0, "panelWeight"_a = 0.0,
         R"pbdoc(
         Create a time-delayed embedding manifold.
+        )pbdoc");
+
+  m.def("create_manifold_and_targets", create_manifold_and_targets, py::arg("t"), py::arg("x"),
+        "extras"_a = std::nullopt, "panel"_a = std::nullopt, "E"_a = 2, "tau"_a = 1, "allowMissing"_a = false,
+        "p"_a = 1, "full"_a = false, "dt"_a = false, "reldt"_a = false, "dtWeight"_a = 0.0, "panelWeight"_a = 0.0,
+        R"pbdoc(
+        Create a time-delayed embedding manifold and the corresponding target values.
         )pbdoc");
 
   m.attr("__version__") = "dev";
