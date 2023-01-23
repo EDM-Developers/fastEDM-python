@@ -131,7 +131,8 @@ Eigen::MatrixXd create_manifold(std::vector<double> t, std::vector<double> x,
                                 bool reldt = false, double dtWeight = 0.0, double panelWeight = 0.0)
 {
   auto M = _construct_manifold(t, x, extras, panel, E, tau, allowMissing, p, full, dt, reldt, dtWeight, panelWeight);
-  return to_eigen(M.data(), M.numPoints(), M.E_actual(), true);
+  auto M_eig = to_eigen(M.data(), M.numPoints(), M.E_actual(), true);
+  return M_eig;
 }
 
 // Create a method which returns a python tuple of the manifold and the targets vector
@@ -142,7 +143,8 @@ py::tuple create_manifold_and_targets(std::vector<double> t, std::vector<double>
                                       bool reldt = false, double dtWeight = 0.0, double panelWeight = 0.0)
 {
   auto M = _construct_manifold(t, x, extras, panel, E, tau, allowMissing, p, full, dt, reldt, dtWeight, panelWeight);
-  return py::make_tuple(to_eigen(M.data(), M.numPoints(), M.E_actual(), true), M.targetsMap());
+  auto M_eig = to_eigen(M.data(), M.numPoints(), M.E_actual(), true);
+  return py::make_tuple(M_eig, M.targets());
 }
 
 py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional<std::vector<double>> y = std::nullopt,
