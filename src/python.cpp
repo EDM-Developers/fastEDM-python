@@ -144,7 +144,8 @@ py::tuple create_manifold_and_targets(std::vector<double> t, std::vector<double>
 {
   auto M = _construct_manifold(t, x, extras, panel, E, tau, allowMissing, p, full, dt, reldt, dtWeight, panelWeight);
   auto M_eig = to_eigen(M.data(), M.numPoints(), M.E_actual(), true);
-  return py::make_tuple(M_eig, M.targets());
+  auto targets = to_eigen(&(M.targets()[0]), M.numPoints(), 1);
+  return py::make_tuple(M_eig, targets);
 }
 
 py::dict run_command(std::vector<double> t, std::vector<double> x, std::optional<std::vector<double>> y = std::nullopt,

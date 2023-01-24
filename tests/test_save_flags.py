@@ -55,6 +55,9 @@ class TestCI(unittest.TestCase):
 
         mani, targets = create_manifold_and_targets(t, x, E=E, tau=tau, p=p)
 
+        assert type(mani) == np.ndarray
+        assert type(targets) == np.ndarray
+
         mani = mani[:, ::-1]
 
         assert len(x) == 100
