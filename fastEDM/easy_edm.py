@@ -1,6 +1,7 @@
 from scipy.optimize import minimize
-from scipy.stats import ks_2samp
+from scipy.stats import ks_2samp, ttest_ind
 import numpy as np
+import pandas as pd
 import math
 import matplotlib.pyplot as plt
 from prettytable import PrettyTable
@@ -96,7 +97,7 @@ def easy_edm(
         print("=== Finding optimal E using simplex projection.")
 
     # Find optimal E (embedding dimension) of the causal variable using simplex projection
-    E_best = find_embedding_dimension(edm, t, x, verbosity, log)
+    E_best = stepwise_find_embedding_dimension(edm, t, x, verbosity, log)
 
     if verbosity > 1:
         print("=== Testing for non-linearity using S-Map.")
@@ -108,7 +109,8 @@ def easy_edm(
         print("=== Testing for delay effect of x on y.")
 
     # Lags the y (effect) time series by the optimal value or differences the series if it was linear
-    yOpt = get_optimal_effect(edm, t, x, y, E_best, verbosity, isNonLinear, optTheta, maxLag, log)
+    # yOpt = get_optimal_effect(edm, t, x, y, E_best, verbosity, isNonLinear, optTheta, maxLag, log)
+    yOpt = y
 
     if verbosity > 1:
         print("=== Finding maximum library size.")
@@ -215,6 +217,54 @@ def preprocess_inputs(data, cause, effect, time, verbosity, normalize, log):
     return t, x, y
 
 
+def compare_means(a, b, verbosity=0):
+    # Perform two-sample t-test
+    _, p_value = ttest_ind(b, a, alternative="greater")
+
+    # Check if p-value is less than 0.05 (assuming a significance level of 0.05)
+    if verbosity > 0:
+        if p_value < 0.25:
+            print("The values in b are statistically significantly larger than the values in a.")
+        else:
+            print("The values in b are not statistically significantly larger than the values in a.")
+
+    return p_value < 0.05
+
+def stepwise_find_embedding_dimension(edm, t, x, verbosity, log):
+
+    MAX_E = 25
+
+    df_E = pd.DataFrame(columns=["E", "library", "theta", "rho", "mae"])
+    found_optimal = False
+
+    for E in range(3, MAX_E):
+        res = edm(t, x, E=[E, E+1], numReps=100)
+
+        sum_df = res["summary"]
+        row = sum_df[sum_df["E"] == E]
+
+        # Append `row` to the end of the df_E dataframe
+        df_E = pd.concat([df_E, row], ignore_index=True)
+
+        stats = res["stats"]
+        a = stats[stats["E"] == E]["rho"]
+        b = stats[stats["E"] == E+1]["rho"]
+        if not compare_means(a, b):
+            found_optimal = True
+            break
+
+    if verbosity > 0:
+        if found_optimal:
+            print(f"Found optimal embedding dimension E to be {E}.")
+        else:
+            E = MAX_E
+            print(f"Gave up at max E={E}.")
+
+    log.captureEmbeddingInfo(df_E)
+
+    return E
+
+
 def find_embedding_dimension(edm, t, x, verbosity, log):
     """
     Find optimal E (embedding dimension) of the causal variable using simplex projection
@@ -237,7 +287,8 @@ def find_embedding_dimension(edm, t, x, verbosity, log):
         Optimal embedding dimension of the causal variable
     """
 
-    res = edm(t, x, E=list(range(3, 10 + 1)))
+    MAX_E = 25
+    res = edm(t, x, E=list(range(3, MAX_E + 1)))
 
     log.captureEmbeddingInfo(res["summary"])
 
@@ -316,6 +367,12 @@ def test_nonlinearity(edm, t, x, E_best, max_theta, num_thetas, theta_reps, verb
         plt.ylabel("rho")
         plt.axvline(optTheta, ls="--", c="k")
         plt.show()
+
+    if optTheta == 0:
+        isNonLinear = False
+        if verbosity > 0:
+            print("Skipped Kolmogorov-Smirnov test as optimal theta is 0.")
+        return optTheta, isNonLinear
 
     # Kolmogorov-Smirnov test: optimal theta against theta = 0
     resBase = edm(t, x, E=E_best, theta=0, numReps=theta_reps, k=20, algorithm="smap")
@@ -633,15 +690,15 @@ def test_convergence_dist(edm, t, x, y, E_best, libraryMax, theta, verbosity, nu
     finalRes = edm(t, y, x, E=E_best, library=libraryMax, theta=theta, k=np.inf, shuffle=True)
     finalRho = float(finalRes["summary"]["rho"])
 
-    q975, q95 = np.quantile(dist, 0.975), np.quantile(dist, 0.95)
+    q_strong, q_some = np.quantile(dist, 0.99), np.quantile(dist, 0.975)
     rhoQuantile = np.count_nonzero(dist < finalRho) / dist.size
     if verbosity >= 1:
-        print(f"At library=E+2, found rho quantiles of {round(q975, 5)} (0.975) and {round(q95, 5)} (0.95)")
+        print(f"At library=E+2, found rho quantiles of {round(q_strong, 5)} (0.99) and {round(q_some, 5)} (0.975)")
         print(f"At library=max, found final rho was {round(finalRho, 5)}, i.e. quantile={rhoQuantile}")
 
-    if finalRho > q975:
+    if finalRho >= q_strong:
         causalSummary = "Strong evidence"
-    elif finalRho > q95:
+    elif finalRho > q_some:
         causalSummary = "Some evidence"
     else:
         causalSummary = "No evidence"

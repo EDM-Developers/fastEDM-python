@@ -1,9 +1,22 @@
 import numpy as np
 from prettytable import PrettyTable
 
+def reduce_dataframe_rows(df, row_limit):
+    df = df.copy()
+    while df.shape[0] > row_limit:
+        df = df.iloc[::2, :]
+    return df
+
+def dataframe_to_prettytable(df):
+    pt = PrettyTable()
+    pt.field_names = df.columns
+    for _, row in df.iterrows():
+        E, library, theta, rho, mae = row
+        pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5)))
+    return pt
 
 class EasyEDMSummary:
-    ROW_LIMIT = 5
+    ROW_LIMIT = 10
     WIDTH_LIMIT = 80
 
     embedding_info = None
@@ -53,32 +66,24 @@ class EasyEDMSummary:
         print(table)
 
     def printEmbeddingInfo(self):
-        pt = PrettyTable()
-        pt.field_names = ["E", "library", "theta", "rho", "mae"]
-
-        sorted_info = self.embedding_info.sort_values(by=["rho"])
-        for idx, row in sorted_info.iterrows():
-            E, library, theta, rho, mae = row
-            pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5)))
-            if idx > self.ROW_LIMIT:
-                break
-
+        if self.embedding_info is None:
+            return
+        df = reduce_dataframe_rows(self.embedding_info, self.ROW_LIMIT)
+        pt = dataframe_to_prettytable(df)
         self.printTable(pt, "Finding optimal E using simplex projection")
 
     def printThetaInfo(self):
-        pt = PrettyTable()
-        pt.field_names = ["E", "library", "theta", "rho", "mae"]
-
-        sorted_info = self.theta_info.sort_values(by=["rho"])
-        for idx, row in sorted_info.iterrows():
-            E, library, theta, rho, mae = row
-            pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5)))
-            if idx > self.ROW_LIMIT:
-                break
-
+        if self.theta_info is None:
+            return
+        
+        df = reduce_dataframe_rows(self.theta_info, self.ROW_LIMIT)
+        pt = dataframe_to_prettytable(df)
         self.printTable(pt, "Finding optimal Theta using smap")
 
     def printNonLinearTestInfo(self):
+        if self.nonlin_info is None:
+            return
+        
         pt = PrettyTable()
 
         resBase, resOpt, ksTest = self.nonlin_info
@@ -94,22 +99,31 @@ class EasyEDMSummary:
         self.printTable(pt, "Checking nonlinearity using Kolmogorov-Smirnov test")
 
     def printLagInfo(self):
+        if self.lag_info is None:
+            return
+        
         pt = PrettyTable()
         pt.field_names = ["lag", "rho"]
 
         data = list(self.lag_info.items())
         data.sort(key=lambda x: -x[1])
-        for idx, tup in enumerate(data):
+
+        row_num = 0
+        for _, tup in enumerate(data):
             lag, rho = tup
             lag = ("" if lag < 0 else "+") + str(lag)
             rho = round(rho, 5)
             pt.add_row((lag, rho))
-            if idx > self.ROW_LIMIT:
+            row_num += 1
+            if row_num >= self.ROW_LIMIT:
                 break
 
         self.printTable(pt, "Finding optimal lag using smap")
 
     def printConvergenceInfo(self):
+        if self.conv_info is None:
+            return
+        
         pt = PrettyTable()
         type, dist, sample = self.conv_info
 
@@ -118,10 +132,12 @@ class EasyEDMSummary:
             # pt.field_names = ['E', 'library', 'theta', 'rho', 'mae']
             # sorted_info = dist.sort_values(by=["rho"])
             # print(sorted_info)
-            # for idx, row in sorted_info.iterrows():
+            # row_num = 0
+            # for _, row in sorted_info.iterrows():
             #     E, library, theta, rho, mae = row
             #     pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5)))
-            #     if idx > self.ROW_LIMIT:
+            #     row_num += 1
+            #     if row_num >= self.ROW_LIMIT:
             #         break
 
             # self.printTable(pt, "Testing convergence: distrbution at a small library size")
@@ -131,10 +147,13 @@ class EasyEDMSummary:
 
             pt = PrettyTable()
             pt.field_names = ["E", "library", "theta", "rho", "mae", "quantile"]
-            for idx, row in sample.iterrows():
+
+            row_num = 0
+            for _, row in sample.iterrows():
                 E, library, theta, rho, mae = row
                 pt.add_row((int(E), int(library), round(theta, 5), round(rho, 5), round(mae, 5), round(rhoQuantile, 5)))
-                if idx > self.ROW_LIMIT:
+                row_num += 1
+                if row_num >= self.ROW_LIMIT:
                     break
 
             self.printTable(pt, "Testing convergence: sampled at maximum library size")
