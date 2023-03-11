@@ -5,13 +5,22 @@ import math
 import matplotlib.pyplot as plt
 from prettytable import PrettyTable
 
-from fastEDM import edm, EasyEDMSummary
+import fastEDM
+from functools import partial
 
 DEBUG = False
 
 
 def easy_edm(
-    cause, effect, time=None, data=None, direction="oneway", verbosity=1, showProgressBar=None, normalize=True
+    cause,
+    effect,
+    time=None,
+    data=None,
+    direction="oneway",
+    normalize=True,
+    showProgressBar=None,
+    numThreads=1,
+    verbosity=1,
 ):
     """
     This is an automated workflow for performing causal analysis on the
@@ -41,13 +50,15 @@ def easy_edm(
     direction : str
         A string specifying whether we are checking a one directional causal effect or whether
         to test the reverse direction at the same time (work in progress!).
+    normalize : bool
+        Whether to normalize the inputs before starting EDM.
+    showProgressBar : bool
+        Whether or not to print out a progress bar during the computations.
+    numThreads : int
+        The number of threads to use for parallel computation.
     verbosity : int
         The level of detail in the output. 0 for final result only, 1 for results of each step,
         2 for subheading, 3 for additional plots
-    showProgressBar : bool
-        Whether or not to print out a progress bar during the computations.
-    normalize : bool
-        Whether to normalize the inputs before starting EDM.
     ------------------------------------------------------------------------------------------
     Returns
     ------------------------------------------------------------------------------------------
@@ -61,6 +72,11 @@ def easy_edm(
         "this 'easy_edm automated analysis is still a work-in-progress."
     )
 
+    if not showProgressBar:
+        showProgressBar = verbosity > 0
+
+    edm = partial(fastEDM.edm, verbosity=0, showProgressBar=showProgressBar, numThreads=numThreads)
+
     # Development parameters, remove later!
     convergence_method = "quantile"
     max_theta = 5
@@ -68,10 +84,7 @@ def easy_edm(
     theta_reps = 20
     maxLag = 5
 
-    log = EasyEDMSummary()
-
-    if not showProgressBar:
-        showProgressBar = verbosity > 0
+    log = fastEDM.EasyEDMSummary()
 
     if verbosity > 1:
         print("=== Processing inputs and extracting relevant data.")
@@ -83,27 +96,25 @@ def easy_edm(
         print("=== Finding optimal E using simplex projection.")
 
     # Find optimal E (embedding dimension) of the causal variable using simplex projection
-    E_best = find_embedding_dimension(t, x, verbosity, showProgressBar, log)
+    E_best = find_embedding_dimension(edm, t, x, verbosity, log)
 
     if verbosity > 1:
         print("=== Testing for non-linearity using S-Map.")
 
     # Test for non-linearity using S-Map
-    optTheta, isNonLinear = test_nonlinearity(
-        t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, showProgressBar, log
-    )
+    optTheta, isNonLinear = test_nonlinearity(edm, t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, log)
 
     if verbosity > 1:
         print("=== Testing for delay effect of x on y.")
 
     # Lags the y (effect) time series by the optimal value or differences the series if it was linear
-    yOpt = get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear, optTheta, maxLag, log)
+    yOpt = get_optimal_effect(edm, t, x, y, E_best, verbosity, isNonLinear, optTheta, maxLag, log)
 
     if verbosity > 1:
         print("=== Finding maximum library size.")
 
     # Get max library size
-    libraryMax = get_max_library(t, x, yOpt, E_best, verbosity, showProgressBar, log)
+    libraryMax = get_max_library(edm, t, x, yOpt, E_best, verbosity, log)
 
     if verbosity > 1:
         print(f"=== Testing for causality using '{convergence_method}' method.")
@@ -111,11 +122,11 @@ def easy_edm(
     # Test for causality using CCM
     if convergence_method == "parametric":
         # Perform cross-mapping (CCM)
-        result = test_convergence_monster(t, x, yOpt, E_best, libraryMax, optTheta, verbosity, showProgressBar, log)
+        result = test_convergence_monster(edm, t, x, yOpt, E_best, libraryMax, optTheta, verbosity, log)
     elif convergence_method == "hypothesis":
         result = test_convergence_monster  # Replace this later
     elif convergence_method == "quantile":
-        result = test_convergence_dist(t, x, yOpt, E_best, libraryMax, optTheta, verbosity, showProgressBar, 1000, log)
+        result = test_convergence_dist(edm, t, x, yOpt, E_best, libraryMax, optTheta, verbosity, 1000, log)
     else:
         raise ValueError("Invalid convergence method selected")
 
@@ -204,12 +215,14 @@ def preprocess_inputs(data, cause, effect, time, verbosity, normalize, log):
     return t, x, y
 
 
-def find_embedding_dimension(t, x, verbosity, showProgressBar, log):
+def find_embedding_dimension(edm, t, x, verbosity, log):
     """
     Find optimal E (embedding dimension) of the causal variable using simplex projection
     ------------------------------------------------------------------------------------------
     Parameters
     ------------------------------------------------------------------------------------------
+    edm : function
+        This is a variation of the fastEDM.edm function with some parameters fixed.
     t : np.ndarray
         The sampling times for cause/effect time series.
     x : np.ndarray
@@ -217,8 +230,6 @@ def find_embedding_dimension(t, x, verbosity, showProgressBar, log):
     verbosity : int
         The level of detail in the output. 0 for final result only, 1 for results of each step,
         2 for subheading, 3 for additional plots
-    showProgressBar : bool
-        Whether to print the progress bar for EDM calls.
     ------------------------------------------------------------------------------------------
     Returns
     ------------------------------------------------------------------------------------------
@@ -226,7 +237,7 @@ def find_embedding_dimension(t, x, verbosity, showProgressBar, log):
         Optimal embedding dimension of the causal variable
     """
 
-    res = edm(t, x, E=list(range(3, 10 + 1)), verbosity=0, showProgressBar=showProgressBar)
+    res = edm(t, x, E=list(range(3, 10 + 1)))
 
     log.captureEmbeddingInfo(res["summary"])
 
@@ -247,12 +258,14 @@ def find_embedding_dimension(t, x, verbosity, showProgressBar, log):
     return E_best
 
 
-def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, showProgressBar, log):
+def test_nonlinearity(edm, t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, log):
     """
     Test for non-linearity using S-Map
     ------------------------------------------------------------------------------------------
     Parameters
     ------------------------------------------------------------------------------------------
+    edm : function
+        This is a variation of the fastEDM.edm function with some parameters fixed.
     t : np.ndarray
         The sampling times for cause/effect time series.
     x : np.ndarray
@@ -266,8 +279,6 @@ def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity
     verbosity : int
         The level of detail in the output. 0 for final result only, 1 for results of each step,
         2 for subheading, 3 for additional plots
-    showProgressBar : bool
-        Whether to print the progress bar for EDM calls.
     ------------------------------------------------------------------------------------------
     Returns
     ------------------------------------------------------------------------------------------
@@ -282,16 +293,7 @@ def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity
     theta_values = np.linspace(0, max_theta, 1 + num_thetas)
 
     # Calculate predictive accuracy over theta 0 to 'max_theta'
-    res = edm(
-        t,
-        x,
-        E=E_best,
-        theta=theta_values,
-        algorithm="smap",
-        k=float("inf"),
-        verbosity=0,
-        showProgressBar=showProgressBar,
-    )
+    res = edm(t, x, E=E_best, theta=theta_values, algorithm="smap", k=float("inf"))
     summary = res["summary"]
 
     log.captureThetaInfo(res["summary"])
@@ -316,28 +318,8 @@ def test_nonlinearity(t, x, E_best, max_theta, num_thetas, theta_reps, verbosity
         plt.show()
 
     # Kolmogorov-Smirnov test: optimal theta against theta = 0
-    resBase = edm(
-        t,
-        x,
-        E=E_best,
-        theta=0,
-        numReps=theta_reps,
-        k=20,
-        algorithm="smap",
-        verbosity=0,
-        showProgressBar=showProgressBar,
-    )
-    resOpt = edm(
-        t,
-        x,
-        E=E_best,
-        theta=optTheta,
-        numReps=theta_reps,
-        k=20,
-        algorithm="smap",
-        verbosity=0,
-        showProgressBar=showProgressBar,
-    )
+    resBase = edm(t, x, E=E_best, theta=0, numReps=theta_reps, k=20, algorithm="smap")
+    resOpt = edm(t, x, E=E_best, theta=optTheta, numReps=theta_reps, k=20, algorithm="smap")
 
     sampleBase, sampleOpt = resBase["stats"]["rho"], resOpt["stats"]["rho"]
 
@@ -372,12 +354,14 @@ def tslag(t, x, lag=1, dt=1):
     return l_x
 
 
-def get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear, theta, maxLag, log):
+def get_optimal_effect(edm, t, x, y, E_best, verbosity, isNonLinear, theta, maxLag, log):
     """
     Find optimal lag for the y (effect) time series
     ------------------------------------------------------------------------------------------
     Parameters
     ------------------------------------------------------------------------------------------
+    edm : function
+        This is a variation of the fastEDM.edm function with some parameters fixed.
     t : np.ndarray
         The sampling times for cause/effect time series.
     x : np.ndarray
@@ -389,8 +373,6 @@ def get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear,
     verbosity : int
         The level of detail in the output. 0 for final result only, 1 for results of each step,
         2 for subheading, 3 for additional plots
-    showProgressBar : bool
-        Whether to print the progress bar for EDM calls.
     isNonLinear : bool
         Whether the system passes the nonlinearity test.
     theta : int
@@ -408,17 +390,7 @@ def get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear,
 
     rhos = {}
     for i in range(-maxLag, maxLag + 1):
-        res = edm(
-            t,
-            x,
-            tslag(t, y, i),
-            E=E_best,
-            theta=theta,
-            algorithm="simplex",
-            k=float("inf"),
-            verbosity=0,
-            showProgressBar=showProgressBar,
-        )
+        res = edm(t, x, tslag(t, y, i), E=E_best, theta=theta, k=float("inf"))
         rhos[i] = float(res["summary"]["rho"])
 
     log.captureLagInfo(rhos)
@@ -459,12 +431,14 @@ def get_optimal_effect(t, x, y, E_best, verbosity, showProgressBar, isNonLinear,
     return yOpt
 
 
-def get_max_library(t, x, y, E_best, verbosity, showProgressBar, log):
+def get_max_library(edm, t, x, y, E_best, verbosity, log):
     """
     Finds the maximum library size
     ------------------------------------------------------------------------------------------
     Parameters
     ------------------------------------------------------------------------------------------
+    edm : function
+        This is a variation of the fastEDM.edm function with some parameters fixed.
     t : np.ndarray
         The sampling times for cause/effect time series.
     x : np.ndarray
@@ -476,8 +450,6 @@ def get_max_library(t, x, y, E_best, verbosity, showProgressBar, log):
     verbosity : int
         The level of detail in the output. 0 for final result only, 1 for results of each step,
         2 for subheading, 3 for additional plots
-    showProgressBar : bool
-        Whether to print the progress bar for EDM calls.
     ------------------------------------------------------------------------------------------
     Returns
     ------------------------------------------------------------------------------------------
@@ -486,9 +458,7 @@ def get_max_library(t, x, y, E_best, verbosity, showProgressBar, log):
     ------------------------------------------------------------------------------------------
     """
 
-    res = edm(
-        t, y, E=E_best, algorithm="simplex", full=True, saveManifolds=True, verbosity=0, showProgressBar=showProgressBar
-    )
+    res = edm(t, y, E=E_best, full=True, saveManifolds=True)
     libraryMax = len(res["Ms"][0])
 
     if verbosity > 0:
@@ -496,12 +466,14 @@ def get_max_library(t, x, y, E_best, verbosity, showProgressBar, log):
     return libraryMax
 
 
-def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, log):
+def cross_mapping(edm, t, x, y, E_best, libraryMax, theta, verbosity, log):
     """
     Perform convergent cross mapping, using the effect to predict the cause.
     ------------------------------------------------------------------------------------------
     Parameters
     ------------------------------------------------------------------------------------------
+    edm : function
+        This is a variation of the fastEDM.edm function with some parameters fixed.
     t : np.ndarray
         The sampling times for cause/effect time series.
     x : np.ndarray
@@ -515,8 +487,6 @@ def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar
     verbosity : int
         The level of detail in the output. 0 for final result only, 1 for results of each step,
         2 for subheading, 3 for additional plots
-    showProgressBar : bool
-        Whether to print the progress bar for EDM calls.
     ------------------------------------------------------------------------------------------
     Returns
     ------------------------------------------------------------------------------------------
@@ -525,9 +495,7 @@ def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar
     ------------------------------------------------------------------------------------------
     """
 
-    res = edm(
-        t, y, E=E_best, algorithm="simplex", full=True, saveManifolds=True, verbosity=0, showProgressBar=showProgressBar
-    )
+    res = edm(t, y, E=E_best, full=True, saveManifolds=True)
     libraryMax = len(res["Ms"][0])
 
     if verbosity > 0:
@@ -543,28 +511,18 @@ def cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar
     libraries = [math.ceil(libraryStart + step * k) for k in range(25)]
 
     # Next run the convergent cross-mapping (CCM), using the effect to predict the cause.
-    ccm = edm(
-        t,
-        y,
-        x,
-        E=E_best,
-        library=libraries,
-        theta=theta,
-        algorithm="simplex",
-        k=np.inf,
-        shuffle=True,
-        verbosity=0,
-        showProgressBar=showProgressBar,
-    )
+    ccm = edm(t, y, x, E=E_best, library=libraries, theta=theta, k=np.inf, shuffle=True)
     return ccm
 
 
-def test_convergence_monster(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, log):
+def test_convergence_monster(edm, t, x, y, E_best, libraryMax, theta, verbosity, log):
     """
     Test for convergence using parametric test (Monster)
     ------------------------------------------------------------------------------------------
     Parameters
     ------------------------------------------------------------------------------------------
+    edm : function
+        This is a variation of the fastEDM.edm function with some parameters fixed.
     t : np.ndarray
         The sampling times for cause/effect time series.
     x : np.ndarray
@@ -580,8 +538,6 @@ def test_convergence_monster(t, x, y, E_best, libraryMax, theta, verbosity, show
     verbosity : int
         The level of detail in the output. 0 for final result only, 1 for results of each step,
         2 for subheading, 3 for additional plots
-    showProgressBar : bool
-        Whether to print the progress bar for EDM calls.
     ------------------------------------------------------------------------------------------
     Returns
     ------------------------------------------------------------------------------------------
@@ -592,7 +548,7 @@ def test_convergence_monster(t, x, y, E_best, libraryMax, theta, verbosity, show
     """
 
     # Make some rough guesses for the Monster exponential fit coefficients
-    ccm = cross_mapping(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar)
+    ccm = cross_mapping(edm, t, x, y, E_best, libraryMax, theta, verbosity)
     ccmRes = ccm["summary"]
     firstLibrary = np.asarray(ccmRes["library"][0])
     firstRho = np.asarray(ccmRes["rho"])[0]
@@ -637,13 +593,15 @@ def test_convergence_monster(t, x, y, E_best, libraryMax, theta, verbosity, show
     return causalSummary
 
 
-def test_convergence_dist(t, x, y, E_best, libraryMax, theta, verbosity, showProgressBar, numReps, log):
+def test_convergence_dist(edm, t, x, y, E_best, libraryMax, theta, verbosity, numReps, log):
     """
     Test for convergence by comparing the distribution of rho at a small library size and
     a sampled rho at the maximum library size.
     ------------------------------------------------------------------------------------------
     Parameters
     ------------------------------------------------------------------------------------------
+    edm : function
+        This is a variation of the fastEDM.edm function with some parameters fixed.
     t : np.ndarray
         The sampling times for cause/effect time series.
     x : np.ndarray
@@ -659,8 +617,6 @@ def test_convergence_dist(t, x, y, E_best, libraryMax, theta, verbosity, showPro
     verbosity : int
         The level of detail in the output. 0 for final result only, 1 for results of each step,
         2 for subheading, 3 for additional plots
-    showProgressBar : bool
-        Whether to print the progress bar for EDM calls.
     ------------------------------------------------------------------------------------------
     Returns
     ------------------------------------------------------------------------------------------
@@ -671,35 +627,10 @@ def test_convergence_dist(t, x, y, E_best, libraryMax, theta, verbosity, showPro
     """
     librarySmall = max(E_best + 2, libraryMax // 10)
 
-    distRes = edm(
-        t,
-        y,
-        x,
-        E=E_best,
-        library=librarySmall,
-        numReps=numReps,
-        theta=theta,
-        algorithm="simplex",
-        k=np.inf,
-        shuffle=True,
-        verbosity=0,
-        showProgressBar=showProgressBar,
-    )
+    distRes = edm(t, y, x, E=E_best, library=librarySmall, numReps=numReps, theta=theta, k=np.inf, shuffle=True)
     dist = distRes["stats"]["rho"]
 
-    finalRes = edm(
-        t,
-        y,
-        x,
-        E=E_best,
-        library=libraryMax,
-        theta=theta,
-        algorithm="simplex",
-        k=np.inf,
-        shuffle=True,
-        verbosity=0,
-        showProgressBar=showProgressBar,
-    )
+    finalRes = edm(t, y, x, E=E_best, library=libraryMax, theta=theta, k=np.inf, shuffle=True)
     finalRho = float(finalRes["summary"]["rho"])
 
     q975, q95 = np.quantile(dist, 0.975), np.quantile(dist, 0.95)

@@ -6,7 +6,7 @@ from fastEDM import easy_edm
 from helper import logistic_map
 
 VERBOSITY = 0
-
+NUM_THREADS = 4
 
 class TestEasyEdm(unittest.TestCase):
     def test_logistic_map(self):
@@ -45,18 +45,18 @@ class TestEasyEdm(unittest.TestCase):
         chicago = pd.read_csv(url)
 
         print("\n>>> Test 1")
-        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data=chicago, verbosity=VERBOSITY)
+        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data=chicago, verbosity=VERBOSITY, numThreads=NUM_THREADS)
         assert crimeCCMCausesTemp == "No evidence"
 
         print("\n>>> Test 2")
-        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data=chicago, verbosity=VERBOSITY)
+        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data=chicago, verbosity=VERBOSITY, numThreads=NUM_THREADS)
         assert tempCCMCausesCrime != "No evidence"
 
         # Check that the results still hold up if we don't normalize the inputs
         print("\n>>> Test 3")
-        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data=chicago, normalize=False, verbosity=VERBOSITY)
+        crimeCCMCausesTemp = easy_edm("Crime", "Temperature", data=chicago, normalize=False, verbosity=VERBOSITY, numThreads=NUM_THREADS)
         assert crimeCCMCausesTemp == "No evidence"
 
         print("\n>>> Test 4")
-        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data=chicago, normalize=False, verbosity=VERBOSITY)
+        tempCCMCausesCrime = easy_edm("Temperature", "Crime", data=chicago, normalize=False, verbosity=VERBOSITY, numThreads=NUM_THREADS)
         assert tempCCMCausesCrime != "No evidence"
