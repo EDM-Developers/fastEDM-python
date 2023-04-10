@@ -19,6 +19,7 @@ def edm(
     crossfold=0,
     full=False,
     shuffle=False,
+    seed=0,
     copredict=None,
     saveTargets=False,
     savePredictions=False,
@@ -139,6 +140,9 @@ def edm(
             the oldest observations go into the library set and the newest observations to the prediction set.
             Though if the randomize option is specified, the data is allocated into the two sets in a random
             fashion. If the replicate option is specified, then this randomization is enabled automatically.
+
+        seed: To allow for reproducibility of the internal random number generator, set this seed
+            to a given integer value.
 
         copredict: This option specifies the variable used for coprediction.
             A second prediction is run for each configuration of $E$, library, etc., using the same library set
@@ -348,6 +352,7 @@ def edm(
         crossfold=crossfold,
         full=full,
         shuffle=shuffle,
+        seed=seed,
         saveFinalTargets=saveTargets,
         saveFinalPredictions=savePredictions,
         saveFinalCoPredictions=saveCoPredictions,
