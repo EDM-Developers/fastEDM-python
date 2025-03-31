@@ -21,7 +21,7 @@ class TestCI(unittest.TestCase):
         true_library_mani = np.array([[12, 11]])
         true_prediction_mani = np.array([[13, 12], [14, 13]])
 
-        true_targets = np.array([[14], [np.NAN]])
+        true_targets = np.array([[14], [np.nan]])
         print(true_targets)
         print(res["targets"])
 

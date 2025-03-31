@@ -688,7 +688,7 @@ def test_convergence_dist(edm, t, x, y, E_best, libraryMax, theta, verbosity, nu
     dist = distRes["stats"]["rho"]
 
     finalRes = edm(t, y, x, E=E_best, library=libraryMax, theta=theta, k=np.inf, shuffle=True)
-    finalRho = float(finalRes["summary"]["rho"])
+    finalRho = float(finalRes["summary"]["rho"].iloc[0])
 
     q_strong, q_some = np.quantile(dist, 0.99), np.quantile(dist, 0.975)
     rhoQuantile = np.count_nonzero(dist < finalRho) / dist.size

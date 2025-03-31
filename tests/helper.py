@@ -92,7 +92,7 @@ def expand(matrix, predictionRows):
             expanded.append(matrix[obsNum])
             obsNum += 1
         else:
-            expanded.append(np.full(matrix.shape[1:], np.NAN))
+            expanded.append(np.full(matrix.shape[1:], np.nan))
 
     return np.array(expanded)
 

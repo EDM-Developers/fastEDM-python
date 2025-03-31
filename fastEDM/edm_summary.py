@@ -88,8 +88,8 @@ class EasyEDMSummary:
 
         resBase, resOpt, ksTest = self.nonlin_info
 
-        thetaOpt = round(float(resOpt["theta"]), 3)
-        rhoBase, rhoOpt = round(float(resBase["rho"]), 3), round(float(resOpt["rho"]), 3)
+        thetaOpt = round(float(resOpt["theta"].iloc[0]), 3)
+        rhoBase, rhoOpt = round(float(resBase["rho"].iloc[0]), 3), round(float(resOpt["rho"].iloc[0]), 3)
         ksStat, ksPVal = round(ksTest.statistic, 5), round(ksTest.pvalue, 5)
 
         pt.field_names = ["rho (theta=0)", f"rho (theta={thetaOpt})", "ks-stat", "p-value"]
@@ -142,7 +142,7 @@ class EasyEDMSummary:
 
             # self.printTable(pt, "Testing convergence: distrbution at a small library size")
 
-            finalRho = float(sample["rho"])
+            finalRho = float(sample["rho"].iloc[0])
             rhoQuantile = np.count_nonzero(dist < finalRho) / dist.size
 
             pt = PrettyTable()
