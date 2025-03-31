@@ -2,7 +2,8 @@ site_name: fastEDM Python Package
 
 nav:
   - Home: index.md
-  - Demo: manifolds.md
+  # - Demo: manifolds.md
+
 theme:
   name: material
 
