@@ -3,7 +3,7 @@
 name: Build wheels for web assembly
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 jobs:
   wasm:
