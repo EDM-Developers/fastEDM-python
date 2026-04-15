@@ -22,6 +22,7 @@ def easy_edm(
     showProgressBar=None,
     numThreads=1,
     verbosity=1,
+    useKS=False,
 ):
     """
     This is an automated workflow for performing causal analysis on the
@@ -103,7 +104,7 @@ def easy_edm(
         print("=== Testing for non-linearity using S-Map.")
 
     # Test for non-linearity using S-Map
-    optTheta, isNonLinear = test_nonlinearity(edm, t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, log)
+    optTheta, isNonLinear = test_nonlinearity(edm, t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, log, useKS)
 
     if verbosity > 1:
         print("=== Testing for delay effect of x on y.")
@@ -309,7 +310,7 @@ def find_embedding_dimension(edm, t, x, verbosity, log):
     return E_best
 
 
-def test_nonlinearity(edm, t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, log):
+def test_nonlinearity(edm, t, x, E_best, max_theta, num_thetas, theta_reps, verbosity, log, useKS=False):
     """
     Test for non-linearity using S-Map
     ------------------------------------------------------------------------------------------
@@ -373,6 +374,15 @@ def test_nonlinearity(edm, t, x, E_best, max_theta, num_thetas, theta_reps, verb
         isNonLinear = False
         if verbosity > 0:
             print("Skipped Kolmogorov-Smirnov test as optimal theta is 0.")
+        return optTheta, isNonLinear
+
+    if not useKS:
+        isNonLinear = optTheta > 0
+        if verbosity > 0:
+            if isNonLinear:
+                print("Nonlinearity detected (optimal theta > 0).")
+            else:
+                print("No nonlinearity detected (optimal theta = 0).")
         return optTheta, isNonLinear
 
     # Kolmogorov-Smirnov test: optimal theta against theta = 0
