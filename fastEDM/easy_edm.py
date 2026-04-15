@@ -352,7 +352,8 @@ def test_nonlinearity(edm, t, x, E_best, max_theta, num_thetas, theta_reps, verb
     if DEBUG:
         print(f"Summary:\n{summary}")
 
-    # Find optimal value of theta
+    # Find optimal value of theta (idxmax returns the first max, i.e. the
+    # smallest theta when there are ties, since thetas are sorted)
     optIndex = summary["rho"].idxmax()
     optTheta = float(summary.iloc[optIndex]["theta"])
     optRho = round(summary.iloc[optIndex]["rho"], 5)
@@ -474,7 +475,7 @@ def get_optimal_effect(edm, t, x, y, E_best, verbosity, isNonLinear, theta, maxL
             )
 
     yLag = tslag(t, y, optLag)
-    if isNonLinear:
+    if isNonLinear or optLag == 0:
         # Transform y and data to match optimal lagged series
         yOpt = yLag
         if verbosity > 0:
