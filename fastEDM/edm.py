@@ -17,7 +17,7 @@ def edm(
     algorithm="simplex",
     p=None,
     crossfold=0,
-    full=False,
+    full=True,
     shuffle=False,
     seed=0,
     copredict=None,
